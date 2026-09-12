@@ -88,20 +88,28 @@ class _TextInputState extends State<_TextInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         TextField(
           controller: _controller,
           focusNode: _focusNode,
+          minLines: 1,
           maxLines: 3,
           inputFormatters: <TextInputFormatter>[
             _CollapseNewlinesFormatter(),
           ],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: '水印文字',
             hintText: '例如：仅供某某公司办理入职使用 2026-09-12',
-            border: OutlineInputBorder(),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            contentPadding: const EdgeInsets.all(12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
           ),
           onChanged: widget.onChanged,
         ),
@@ -110,13 +118,19 @@ class _TextInputState extends State<_TextInput> {
             TextButton.icon(
               onPressed: () => showRecentTextsSheet(context),
               icon: const Icon(Icons.history, size: 18),
-              label: Text('最近文案（${widget.recentTextsCount}）'),
+              label: Text(
+                '最近文案（${widget.recentTextsCount}）',
+                style: theme.textTheme.labelMedium,
+              ),
             ),
             const Spacer(),
             TextButton.icon(
               onPressed: _insertToday,
               icon: const Icon(Icons.calendar_today_outlined, size: 18),
-              label: const Text('插入今天日期'),
+              label: Text(
+                '插入今天日期',
+                style: theme.textTheme.labelMedium,
+              ),
             ),
           ],
         ),

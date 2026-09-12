@@ -34,16 +34,32 @@ class StyleControls extends StatelessWidget {
               provider.setStyle(style.copyWith(mode: selection.first)),
         ),
         const SizedBox(height: 16),
-        Text('透明度 ${(style.opacity * 100).round()}%',
-            style: Theme.of(context).textTheme.labelLarge),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text('透明度', style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              '${(style.opacity * 100).round()}%',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ],
+        ),
         Slider(
           value: style.opacity,
           min: WatermarkStyle.minOpacity,
           max: WatermarkStyle.maxOpacity,
           onChanged: (v) => provider.setStyle(style.copyWith(opacity: v)),
         ),
-        Text('字号 ${(style.fontSizeRatio * 100).toStringAsFixed(1)}%',
-            style: Theme.of(context).textTheme.labelLarge),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Text('字号', style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              '${(style.fontSizeRatio * 100).toStringAsFixed(1)}%',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ],
+        ),
         Slider(
           value: style.fontSizeRatio,
           min: WatermarkStyle.minFontSizeRatio,
@@ -57,7 +73,7 @@ class StyleControls extends StatelessWidget {
             const SizedBox(width: 12),
             for (final value in WatermarkStyle.palette)
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: 10),
                 child: _ColorDot(
                   value: value,
                   selected: value == style.colorValue,
