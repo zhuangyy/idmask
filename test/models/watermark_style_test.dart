@@ -7,6 +7,7 @@ void main() {
       const s = WatermarkStyle();
       expect(s.mode, WatermarkLayoutMode.tile);
       expect(s.singlePosition, const Offset(0.5, 0.5));
+      expect(s.tileOffset, Offset.zero);
       expect(s.opacity, 0.28);
       expect(s.fontSizeRatio, 0.045);
       expect(s.colorValue, 0xFF404040);
@@ -27,6 +28,13 @@ void main() {
     test('位置越界被夹到 0–1', () {
       final s = WatermarkStyle.sanitized(singlePosition: const Offset(-1, 3));
       expect(s.singlePosition, const Offset(0.0, 1.0));
+    });
+
+    test('平铺偏移越界被夹到 ±0.25', () {
+      expect(
+        WatermarkStyle.sanitized(tileOffset: const Offset(1, -1)).tileOffset,
+        const Offset(0.25, -0.25),
+      );
     });
 
     test('色板外的颜色回落到深灰', () {
@@ -50,6 +58,12 @@ void main() {
       final back = WatermarkStyle.fromJson(s.toJson());
       expect(back, s);
       expect(back.singlePosition, const Offset(0.2, 0.8));
+    });
+
+    test('平铺偏移能往返序列化', () {
+      const s = WatermarkStyle(tileOffset: Offset(0.2, -0.1));
+      expect(WatermarkStyle.fromJson(s.toJson()).tileOffset,
+          const Offset(0.2, -0.1));
     });
 
     test('fromJson 同样做夹取', () {

@@ -76,6 +76,52 @@ void main() {
       final sparse = compute(canvasSize: canvas, style: const WatermarkStyle(fontSizeRatio: 0.12));
       expect(sparse.length, lessThan(dense.length));
     });
+
+    test('偏移 (0,0) 时与水印未偏移的结果一致', () {
+      final a = compute(canvasSize: const Size(1200, 900), style: const WatermarkStyle());
+      final b = compute(
+        canvasSize: const Size(1200, 900),
+        style: const WatermarkStyle(tileOffset: Offset.zero),
+      );
+      expect(b.length, a.length);
+      for (var i = 0; i < a.length; i++) {
+        expect(b[i].center, a[i].center);
+      }
+    });
+
+    test('偏移会把整个网格整体平移，指令条数不变', () {
+      const canvas = Size(1200, 900);
+      const shift = Offset(0.2, -0.1);
+      final base = compute(canvasSize: canvas, style: const WatermarkStyle());
+      final moved = compute(
+        canvasSize: canvas,
+        style: const WatermarkStyle(tileOffset: shift),
+      );
+
+      expect(moved.length, base.length);
+      for (var i = 0; i < base.length; i++) {
+        expect(moved[i].center.dx, closeTo(base[i].center.dx + shift.dx * 1200, 1e-6));
+        expect(moved[i].center.dy, closeTo(base[i].center.dy + shift.dy * 900, 1e-6));
+      }
+    });
+
+    test('偏移足够大时，画布左侧出现完全没有水印的竖条', () {
+      const canvas = Size(1200, 900);
+      // 把网格整体往右推 0.25 张
+      final items = compute(
+        canvasSize: canvas,
+        style: const WatermarkStyle(tileOffset: Offset(0.25, 0)),
+      );
+      // 画布内的最左边缘一带应当没有任何文字中心落在这里。
+      // （画布外的中心会被裁剪丢弃，所以只检查 0 <= x < 阈值 的区间。）
+      // 阈值 0.03 张：实测偏移 0.25 张后，画布内最左文字中心在 x≈56.08（约 0.047 张），
+      // 0.03 张（36px）落在「左侧空白」区间 [0, 56.08) 内，两侧各留约 20px 余量，
+      // 对布局算法的微调最不敏感。
+      final nearLeftEdge = items.where(
+          (i) => i.center.dx >= 0 && i.center.dx < 1200 * 0.03);
+      expect(nearLeftEdge, isEmpty,
+          reason: '偏移后左侧应当露出没有水印的区域');
+    });
   });
 
   group('单块', () {

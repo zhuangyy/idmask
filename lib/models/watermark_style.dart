@@ -13,6 +13,10 @@ class WatermarkStyle {
   static const double minFontSizeRatio = 0.02;
   static const double maxFontSizeRatio = 0.12;
 
+  /// 平铺网格整体偏移的绝对值上限（归一化）。
+  /// 拖得再多就会露出大片无水印区域，失去平铺的保护意义。
+  static const double maxTileOffset = 0.25;
+
   /// 预设色板：黑、深灰、红、白、蓝。
   static const List<int> palette = <int>[
     0xFF000000,
@@ -29,6 +33,9 @@ class WatermarkStyle {
   /// 归一化坐标，仅单块模式使用。
   final Offset singlePosition;
 
+  /// 平铺网格的整体偏移（归一化），仅平铺模式使用。默认 (0, 0) 即铺满。
+  final Offset tileOffset;
+
   final double opacity;
 
   /// 字号相对图片短边的比例。
@@ -41,6 +48,7 @@ class WatermarkStyle {
   const WatermarkStyle({
     this.mode = WatermarkLayoutMode.tile,
     this.singlePosition = const Offset(0.5, 0.5),
+    this.tileOffset = Offset.zero,
     this.opacity = 0.28,
     this.fontSizeRatio = 0.045,
     this.colorValue = defaultColor,
@@ -50,6 +58,7 @@ class WatermarkStyle {
   factory WatermarkStyle.sanitized({
     WatermarkLayoutMode mode = WatermarkLayoutMode.tile,
     Offset singlePosition = const Offset(0.5, 0.5),
+    Offset tileOffset = Offset.zero,
     double opacity = 0.28,
     double fontSizeRatio = 0.045,
     int colorValue = defaultColor,
@@ -57,6 +66,7 @@ class WatermarkStyle {
     return WatermarkStyle(
       mode: mode,
       singlePosition: _clampUnit(singlePosition),
+      tileOffset: _clampTileOffset(tileOffset),
       opacity: opacity.clamp(minOpacity, maxOpacity),
       fontSizeRatio: fontSizeRatio.clamp(minFontSizeRatio, maxFontSizeRatio),
       colorValue: palette.contains(colorValue) ? colorValue : defaultColor,
@@ -66,9 +76,15 @@ class WatermarkStyle {
   static Offset _clampUnit(Offset o) =>
       Offset(o.dx.clamp(0.0, 1.0), o.dy.clamp(0.0, 1.0));
 
+  static Offset _clampTileOffset(Offset o) => Offset(
+        o.dx.clamp(-maxTileOffset, maxTileOffset),
+        o.dy.clamp(-maxTileOffset, maxTileOffset),
+      );
+
   WatermarkStyle copyWith({
     WatermarkLayoutMode? mode,
     Offset? singlePosition,
+    Offset? tileOffset,
     double? opacity,
     double? fontSizeRatio,
     int? colorValue,
@@ -76,6 +92,7 @@ class WatermarkStyle {
     return WatermarkStyle.sanitized(
       mode: mode ?? this.mode,
       singlePosition: singlePosition ?? this.singlePosition,
+      tileOffset: tileOffset ?? this.tileOffset,
       opacity: opacity ?? this.opacity,
       fontSizeRatio: fontSizeRatio ?? this.fontSizeRatio,
       colorValue: colorValue ?? this.colorValue,
@@ -86,6 +103,8 @@ class WatermarkStyle {
         'mode': mode.name,
         'positionX': singlePosition.dx,
         'positionY': singlePosition.dy,
+        'tileOffsetX': tileOffset.dx,
+        'tileOffsetY': tileOffset.dy,
         'opacity': opacity,
         'fontSizeRatio': fontSizeRatio,
         'colorValue': colorValue,
@@ -97,6 +116,10 @@ class WatermarkStyle {
       singlePosition: Offset(
         (json['positionX'] as num?)?.toDouble() ?? 0.5,
         (json['positionY'] as num?)?.toDouble() ?? 0.5,
+      ),
+      tileOffset: Offset(
+        (json['tileOffsetX'] as num?)?.toDouble() ?? 0,
+        (json['tileOffsetY'] as num?)?.toDouble() ?? 0,
       ),
       opacity: (json['opacity'] as num?)?.toDouble() ?? 0.28,
       fontSizeRatio: (json['fontSizeRatio'] as num?)?.toDouble() ?? 0.045,
@@ -114,13 +137,14 @@ class WatermarkStyle {
       other is WatermarkStyle &&
       other.mode == mode &&
       other.singlePosition == singlePosition &&
+      other.tileOffset == tileOffset &&
       other.opacity == opacity &&
       other.fontSizeRatio == fontSizeRatio &&
       other.colorValue == colorValue;
 
   @override
   int get hashCode =>
-      Object.hash(mode, singlePosition, opacity, fontSizeRatio, colorValue);
+      Object.hash(mode, singlePosition, tileOffset, opacity, fontSizeRatio, colorValue);
 
   @override
   String toString() =>

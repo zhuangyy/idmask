@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/watermark_style.dart';
 import '../providers/watermark_provider.dart';
 
-/// 叠在预览上的手势层：拖动单块水印，并在拖动期间画十字参考线。
+/// 叠在预览上的手势层：拖动水印，并在单块模式拖动期间画十字参考线。
 ///
 /// 只负责「让用户摆水印」，不负责画水印本身 —— 水印仍由 photo_canvas 绘制。
-/// 拖动改的只是 `WatermarkStyle.singlePosition` 一个值。
+/// 单块模式拖动改 `WatermarkStyle.singlePosition`，平铺模式拖动改网格整体偏移 `tileOffset`。
 class WatermarkDragLayer extends StatefulWidget {
   const WatermarkDragLayer({super.key, required this.child});
 
@@ -23,8 +23,7 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WatermarkProvider>();
-    final enabled =
-        provider.hasPhoto && provider.style.mode == WatermarkLayoutMode.single;
+    final enabled = provider.hasPhoto && !provider.isSaving;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -42,9 +41,7 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
                     details.delta.dx / size.width,
                     details.delta.dy / size.height,
                   );
-                  provider.updateSinglePosition(
-                    provider.style.singlePosition + delta,
-                  );
+                  provider.nudgePosition(delta);
                 }
               : null,
           onPanEnd: enabled ? (_) => setState(() => _dragging = false) : null,
@@ -53,7 +50,7 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
             fit: StackFit.expand,
             children: <Widget>[
               widget.child,
-              if (_dragging && enabled)
+              if (_dragging && enabled && provider.style.mode == WatermarkLayoutMode.single)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: CustomPaint(

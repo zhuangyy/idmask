@@ -88,6 +88,17 @@ class WatermarkProvider extends ChangeNotifier {
     setStyle(_style.copyWith(singlePosition: position));
   }
 
+  /// 拖动水印：单块模式改位置，平铺模式改网格的整体偏移。
+  /// 两者都是归一化坐标，夹取由 WatermarkStyle 负责。
+  void nudgePosition(Offset delta) {
+    final style = _style;
+    if (style.mode == WatermarkLayoutMode.single) {
+      setStyle(style.copyWith(singlePosition: style.singlePosition + delta));
+    } else {
+      setStyle(style.copyWith(tileOffset: style.tileOffset + delta));
+    }
+  }
+
   // ---- 照片 ----
 
   /// 选图后统一落到私有目录，之后所有环节都读副本路径。

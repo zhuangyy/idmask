@@ -76,6 +76,12 @@ class WatermarkLayout {
     final centerX = canvasSize.width / 2;
     final centerY = canvasSize.height / 2;
 
+    // 平铺网格的整体偏移：拖出多少就露出多少没有水印的区域。
+    final shift = Offset(
+      style.tileOffset.dx * canvasSize.width,
+      style.tileOffset.dy * canvasSize.height,
+    );
+
     final rowCount = (extentY / lineHeight).ceil() + 1;
     final items = <WatermarkItem>[];
 
@@ -94,7 +100,8 @@ class WatermarkLayout {
           center: Offset(
             centerX + cx * cosT - cy * sinT,
             centerY + cx * sinT + cy * cosT,
-          ),
+          ) +
+              shift,
           fontSize: fontSize,
           rotation: theta,
         ));
