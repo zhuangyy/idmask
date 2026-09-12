@@ -122,6 +122,25 @@ void main() {
       expect(nearLeftEdge, isEmpty,
           reason: '偏移后左侧应当露出没有水印的区域');
     });
+
+    test('偏移拉到上限 0.75 时，画布上四分之三左右没有水印', () {
+      const canvas = Size(1200, 900);
+      final items = compute(
+        canvasSize: canvas,
+        style: const WatermarkStyle(tileOffset: Offset(0.75, 0)),
+      );
+
+      // 只看落在画布内的文字中心，统计落在左侧多少比例的空区域内
+      final inCanvas = items
+          .where((i) => i.center.dx >= 0 && i.center.dx <= canvas.width)
+          .toList();
+      expect(inCanvas, isNotEmpty, reason: '向右偏移后右侧应当还有水印');
+
+      final minX = inCanvas.map((i) => i.center.dx).reduce((a, b) => a < b ? a : b);
+      // 左侧这一整段都应当是没有水印的
+      expect(minX / canvas.width, greaterThan(0.4),
+          reason: '偏移 0.75 张后左侧至少应空出 40% 宽度，实测 ${minX / canvas.width}');
+    });
   });
 
   group('单块', () {

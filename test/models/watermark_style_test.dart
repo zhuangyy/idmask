@@ -30,10 +30,17 @@ void main() {
       expect(s.singlePosition, const Offset(0.0, 1.0));
     });
 
-    test('平铺偏移越界被夹到 ±0.25', () {
+    test('平铺偏移越界被夹到 ±0.75', () {
       expect(
         WatermarkStyle.sanitized(tileOffset: const Offset(1, -1)).tileOffset,
-        const Offset(0.25, -0.25),
+        const Offset(0.75, -0.75),
+      );
+    });
+
+    test('平铺偏移在上限内时原值保留', () {
+      expect(
+        WatermarkStyle.sanitized(tileOffset: const Offset(0.5, -0.5)).tileOffset,
+        const Offset(0.5, -0.5),
       );
     });
 

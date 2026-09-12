@@ -14,8 +14,8 @@ class WatermarkStyle {
   static const double maxFontSizeRatio = 0.12;
 
   /// 平铺网格整体偏移的绝对值上限（归一化）。
-  /// 拖得再多就会露出大片无水印区域，失去平铺的保护意义。
-  static const double maxTileOffset = 0.25;
+  /// 0.75 意味着最多能拖出 3/4 张的空白区域（网格带旋转余量，实际略小）。
+  static const double maxTileOffset = 0.75;
 
   /// 预设色板：黑、深灰、红、白、蓝。
   static const List<int> palette = <int>[
