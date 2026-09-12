@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/edit_page.dart';
 import 'pages/settings_page.dart';
 import 'providers/watermark_provider.dart';
+import 'services/backup_excluder.dart';
 import 'services/recent_photos_store.dart';
 import 'services/recent_texts_store.dart';
 import 'services/thumbnail_generator.dart';
@@ -19,6 +20,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final supportDir = await getApplicationSupportDirectory();
   final photosDir = Directory(p.join(supportDir.path, 'idwm_photos'));
+
+  await photosDir.create(recursive: true);
+  await BackupExcluder.exclude(photosDir.path);
 
   final provider = WatermarkProvider(
     photosStore: RecentPhotosStore(

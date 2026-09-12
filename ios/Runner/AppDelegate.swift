@@ -41,5 +41,38 @@ import UIKit
 
       result(FlutterStandardTypedData(bytes: jpeg))
     }
+
+    // 存储相关：把照片副本目录排除出 iCloud 备份。
+    let storageChannel = FlutterMethodChannel(
+      name: "com.xzgg.idwm/storage",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+
+    storageChannel.setMethodCallHandler { call, result in
+      guard call.method == "excludeFromBackup" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+
+      guard let args = call.arguments as? [String: Any],
+            let path = args["path"] as? String else {
+        result(FlutterError(code: "BAD_ARGS", message: "缺少 path 参数", details: nil))
+        return
+      }
+
+      var url = URL(fileURLWithPath: path)
+      do {
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try url.setResourceValues(values)
+        result(true)
+      } catch {
+        result(FlutterError(
+          code: "EXCLUDE_FAILED",
+          message: error.localizedDescription,
+          details: nil
+        ))
+      }
+    }
   }
 }
