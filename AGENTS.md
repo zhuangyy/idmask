@@ -58,7 +58,6 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 |---|---|
 | `WatermarkLayout` | 布局计算（纯函数，核心） |
 | `WatermarkPainter` | 按指令绘制到 Canvas（预览与输出共用） |
-| `TemplateComposer` | 模板字段 → 文案（纯函数） |
 | `PhotoFingerprint` | 内容指纹，用于最近照片去重（纯函数，FNV-1a 抽样首/中/末各 4KB） |
 | `RecentPhotosStore` | 照片副本与缩略图的增删查、容量淘汰（10 张）、孤儿清理 |
 | `RecentTextsStore` | 最近文案（10 条）与样式的持久化 |
@@ -104,8 +103,8 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 
 ## 测试
 
-`test/` 下按被测对象分文件。纯逻辑（布局、模板、指纹、存储）与主编辑页的 widget 测试都已覆盖，
-全量 77 条。
+`test/` 下按被测对象分文件。纯逻辑（布局、文案、指纹、存储）与主编辑页的 widget 测试都已覆盖，
+全量 68 条。
 
 真机相关的事靠手测：相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感、
 iCloud 备份排除是否生效。清单见设计文档第 12.2 节。

@@ -77,33 +77,18 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ```
 选图 ──▶ 输文案 ──▶ 实时预览 ──▶ 保存到相册
-（相册 / 最近照片）  (模板/自由)   (版式/样式/摆位置)
+（相册 / 最近照片）        （版式/样式/摆位置）
 ```
 
-### 4.2 文案：模板与自由编辑双模式
+### 4.2 文案：自定义输入
 
-两套都提供，可随时切换，**切换时保留已产生的内容**。
+只有**一个自定义文本输入框**，用户自己写整段文案，**没有模板句式，也没有模式切换**。
 
-**模板模式** 提供三个字段：
+- 文案内容完全由用户决定，例如「仅供某某公司办理入职使用 2026-09-12」
+- 输入框旁有**「插入今天日期」按钮**：把今天的日期（`YYYY-MM-DD`）插入到**光标处**；输入框未聚焦时追加到**文案末尾**
+- 文案为空（`text.trim()` 为空）时**保存按钮置灰**，不进入渲染（即第 10 节的「文案为空」情形）
 
-| 字段 | 说明 | 默认值 |
-|---|---|---|
-| 接收方 | 证件交给谁 | 空 |
-| 用途 | 办理什么事 | 空 |
-| 日期 | 使用日期 | 今天 |
-
-生成句式：
-
-- 接收方与用途都填：`仅供⟨接收方⟩办理⟨用途⟩使用 ⟨日期⟩`
-- 只填用途：`仅供办理⟨用途⟩使用 ⟨日期⟩`
-- 只填接收方：`仅供⟨接收方⟩使用 ⟨日期⟩`
-- 都为空：视为文案为空，保存按钮置灰（即第 10 节的「文案为空」情形）
-
-日期格式固定为 `YYYY-MM-DD`，由日期选择器选定，默认今天。
-
-**自由模式** 直接输入整段文字，不套句式。
-
-从模板切到自由模式时，把当前生成的文案填入自由输入框作为起点；从自由模式切回模板模式时，字段值保持上次填写的内容。这样来回切换不会丢东西。
+写好的文案可一键复用：用过的文案会进入「最近文案」列表（见第 4.5 节）。
 
 ### 4.3 水印版式与位置
 
@@ -119,6 +104,8 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 - **不做吸附**，位置完全由手指决定
 - 拖到画面边缘时**夹住**，水印文字始终完整可见，不会被推出画面
 - 摆好的位置会被记住：切换版式再切回来、重启 App 后仍在
+
+**点击预览区会打开系统相册**：无论空状态（还没选图）还是已选图，点整个预览区都唤起系统相册选图，没有单独的「从相册选照片」按钮。它与「拖动单块水印」的手势共存，靠 Flutter 手势竞技场自动分流：**轻点 → 打开相册；拖动 → 移动水印（仅单块模式）**。
 
 ### 4.4 样式
 
@@ -192,10 +179,8 @@ idwm/
 │   ├── models/
 │   │   ├── watermark_style.dart  # 版式/位置/透明度/字号/颜色 + 序列化
 │   │   ├── watermark_item.dart   # 单条水印的绘制指令
-│   │   ├── recent_photo.dart     # 最近照片的元数据
-│   │   └── template_fields.dart  # 接收方/用途/日期
+│   │   └── recent_photo.dart     # 最近照片的元数据
 │   ├── services/
-│   │   ├── template_composer.dart      # 模板字段 → 文案（纯函数）
 │   │   ├── watermark_layout.dart       # 文案+画布+位置 → List<WatermarkItem>（纯函数）
 │   │   ├── watermark_painter.dart      # 按 items 绘制到 Canvas（预览与输出共用）
 │   │   ├── photo_fingerprint.dart      # 文件内容指纹，用于去重（纯函数）
@@ -214,14 +199,13 @@ idwm/
 │   └── widgets/
 │       ├── photo_canvas.dart           # CustomPaint 实时预览
 │       ├── watermark_drag_layer.dart   # 单块水印的拖动手势与参考线
-│       ├── text_input_section.dart     # 模板/自由 双模式输入
+│       ├── text_input_section.dart     # 自定义文案输入 + 插入今天日期
 │       ├── style_controls.dart         # 透明度/字号/颜色
 │       ├── recent_photos_sheet.dart    # 最近照片网格、删除、清空
 │       └── recent_texts_sheet.dart     # 最近文案选择
 └── test/
     ├── models/watermark_style_test.dart
     ├── models/recent_photo_test.dart
-    ├── services/template_composer_test.dart
     ├── services/watermark_layout_test.dart
     ├── services/photo_fingerprint_test.dart
     ├── services/recent_photos_store_test.dart
@@ -235,7 +219,6 @@ idwm/
 
 | 组件 | 做什么 | 依赖谁 | 怎么用 |
 |---|---|---|---|
-| `TemplateComposer` | 三个字段 + 日期 → 一句文案 | 无 | `compose(fields)` 纯函数 |
 | `WatermarkLayout` | 画布尺寸 + 文案 + 样式 → 绘制指令列表 | 注入的文字测量器 | `compute(...)` 纯函数 |
 | `WatermarkPainter` | 把绘制指令画到任意 `Canvas` 上 | `dart:ui` | 预览与输出调同一个函数 |
 | `PhotoFingerprint` | 由文件字节算出用于去重的指纹 | 无 | `of(bytes)` 纯函数 |
@@ -307,13 +290,6 @@ class RecentPhoto {
   final String id;           // 副本文件名（含扩展名），同时是列表键
   final String fingerprint;  // 内容指纹，用于去重（见 6.1）
   final DateTime addedAt;    // 加入时间，用于排序与展示
-}
-
-/// 模板字段
-class TemplateFields {
-  final String receiver; // 接收方
-  final String purpose;  // 用途
-  final DateTime date;   // 默认今天
 }
 ```
 
@@ -592,7 +568,6 @@ override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicit
 
 | 被测 | 要点 |
 |---|---|
-| `TemplateComposer` | 四种字段组合的句式正确；日期格式为 `YYYY-MM-DD`；含空格、超长接收方等边界 |
 | `WatermarkLayout` 平铺 | 注入假测量器。断言：指令条数 > 0；所有指令 rotation 等于 −30°；字号等于短边 × 比例；超宽图与超窄图不产生空区间；空文案返回空列表 |
 | `WatermarkLayout` 单块 | 位置 (0.5, 0.5) 时居中；位置 (0, 0) 与 (1, 1) 时文字仍完整落在画布内（即夹取生效）；文字宽高超过画布时该方向居中；同一归一化位置在两种画布尺寸下产生等比的结果 |
 | `WatermarkStyle` | JSON 往返序列化；`singlePosition` 越界时被夹到 0–1；非法值（透明度越界、比例越界）被夹到合法区间 |
@@ -607,14 +582,13 @@ override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicit
 
 ### 11.2 Widget 测试
 
-- 模板/自由模式切换时内容不丢失
+- 未选图时主区域显示空状态引导（「点击这里，从相册选一张证件照」）
 - 文案为空时保存按钮禁用
-- 调节透明度/字号后预览 `CustomPaint` 收到重绘
-- 选图前主区域显示空状态引导
-- 在预览区拖动后 `singlePosition` 变化，且被夹在 0–1 内
-- 拖动过程中参考线出现，松手后消失
-- 最近照片为空时显示空状态，不显示网格
-- 长按缩略图弹出删除确认，确认后该条从列表消失
+- 未选图时即使填了文案也不能保存
+- 点预览区（`PhotoCanvas`）触发选图回调 `onRequestPick`
+- 点「插入今天日期」把日期填进文案
+- 拖动透明度滑块后样式跟着变，且不低于下限
+- 点「最近照片」按钮（列表为空时）弹出空状态
 
 ### 11.3 不做自动化、改为真机手测
 
@@ -667,7 +641,7 @@ override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicit
 | 阶段 | 内容 | 完成标志 |
 |---|---|---|
 | M1 | Flutter 工程骨架、4 个依赖、权限配置、包名 | 空 App 在 Android 与 iOS 上能跑起来 |
-| M2 | 模型与服务层纯逻辑（TemplateComposer、WatermarkLayout、WatermarkStyle 含位置与夹取、PhotoFingerprint） | 单元测试通过 |
+| M2 | 模型与服务层纯逻辑（WatermarkLayout、WatermarkStyle 含位置与夹取、PhotoFingerprint） | 单元测试通过 |
 | M3 | 选图、输入区、预览画布、样式控件 | 能在界面上选图并实时看到预览 |
 | M4 | 单块水印的拖动摆放与参考线 | 能把水印拖到任意位置，边缘被夹住，位置可持久化 |
 | M5 | 最近照片：副本落盘、缩略图、网格选择、删除与清空、容量淘汰、孤儿清理 | 重启 App 后能一键选回用过的照片；删了文件也没了 |
