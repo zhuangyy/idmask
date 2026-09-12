@@ -67,20 +67,24 @@ class EditPage extends StatelessWidget {
       ),
       body: Column(
         children: <Widget>[
+          // 预览区固定高度、不放进滚动容器 ——
+          // 否则里面的拖动手势会和页面滚动在手势竞技场里打架。
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: SizedBox(
+              height: 320,
+              child: SectionCard(
+                padding: EdgeInsets.zero,
+                child: PhotoCanvas(onRequestPick: () => _pick(context)),
+              ),
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  SizedBox(
-                    height: 320,
-                    child: SectionCard(
-                      padding: EdgeInsets.zero,
-                      child: PhotoCanvas(onRequestPick: () => _pick(context)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   const SectionCard(child: TextInputSection()),
                   const SizedBox(height: 16),
                   const SectionCard(child: StyleControls()),
