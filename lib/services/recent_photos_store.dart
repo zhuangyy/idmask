@@ -92,8 +92,18 @@ class RecentPhotosStore {
     }
 
     final extension = p.extension(sourcePath);
-    final id = '${DateTime.now().millisecondsSinceEpoch}'
-        '${extension.isEmpty ? '.jpg' : extension}';
+    final ext = extension.isEmpty ? '.jpg' : extension;
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+
+    // 同一毫秒内连加两张（极端情况）会撞出同一个 id，那样后一张会覆盖前一张的副本，
+    // 让两条记录指向同一个文件。撞上就加后缀错开。
+    var id = '$stamp$ext';
+    var suffix = 1;
+    while (existing.any((e) => e.id == id) ||
+        File(p.join(root.path, id)).existsSync()) {
+      id = '$stamp-$suffix$ext';
+      suffix += 1;
+    }
 
     final photo = RecentPhoto(
       id: id,
