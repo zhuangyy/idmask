@@ -73,7 +73,7 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ```
 选图 ──▶ 输文案 ──▶ 实时预览 ──▶ 保存到相册
-         (模板/自由)   (版式/样式)
+         (模板/自由)   (版式/样式/摆位置)
 ```
 
 ### 4.2 文案：模板与自由编辑双模式
@@ -101,16 +101,24 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 从模板切到自由模式时，把当前生成的文案填入自由输入框作为起点；从自由模式切回模板模式时，字段值保持上次填写的内容。这样来回切换不会丢东西。
 
-### 4.3 水印版式
+### 4.3 水印版式与位置
 
 两种版式，在设置里切换，选择会被记住：
 
-- **平铺满画面**（默认）：文字倾斜重复铺满整张图，无法靠裁剪或局部涂抹去除
-- **单块**：一段文字居中显示，不遮挡画面主体
+- **平铺满画面**（默认）：文字倾斜重复铺满整张图，无法靠裁剪或局部涂抹去除。位置由算法决定，用户不需也无法摆放
+- **单块**：一段文字，默认居中显示，**位置可以用手指在预览上直接拖动摆放**
+
+单块模式的摆放规则：
+
+- 在预览图上直接拖动水印文字即可移动，跟手移动，不会跳到手指位置
+- 拖动过程中在预览图上显示穿过水印中心的十字参考线，松手后隐藏
+- **不做吸附**，位置完全由手指决定
+- 拖到画面边缘时**夹住**，水印文字始终完整可见，不会被推出画面
+- 摆好的位置会被记住：切换版式再切回来、重启 App 后仍在
 
 ### 4.4 样式
 
-版式属于低频的一次性偏好，放在设置页；透明度、字号、颜色是每次处理都可能微调的，放在主编辑页。可调项只有三项，其余走调好的默认值：
+版式与位置属于低频偏好；透明度、字号、颜色是每次处理都可能微调的，放在主编辑页。数值可调项只有三项，其余走调好的默认值：
 
 | 项 | 范围 | 默认 |
 |---|---|---|
@@ -122,7 +130,7 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ### 4.5 最近文案
 
-记住最近使用过的 10 条水印文案，以列表形式供一键复用，新的挤掉最旧的。样式设置（版式、透明度、字号、颜色）同样持久化，作为下次打开时的初始值。
+记住最近使用过的 10 条水印文案，以列表形式供一键复用，新的挤掉最旧的。样式设置（版式、位置、透明度、字号、颜色）同样持久化，作为下次打开时的初始值。
 
 ### 4.6 保存行为
 
@@ -150,12 +158,12 @@ idwm/
 │   ├── main.dart                 # 入口，注册 Provider
 │   ├── app.dart                  # MaterialApp、主题、路由
 │   ├── models/
-│   │   ├── watermark_style.dart  # 版式/透明度/字号/颜色 + 序列化
+│   │   ├── watermark_style.dart  # 版式/位置/透明度/字号/颜色 + 序列化
 │   │   ├── watermark_item.dart   # 单条水印的绘制指令
 │   │   └── template_fields.dart  # 接收方/用途/日期
 │   ├── services/
 │   │   ├── template_composer.dart      # 模板字段 → 文案（纯函数）
-│   │   ├── watermark_layout.dart       # 文案+画布 → List<WatermarkItem>（纯函数）
+│   │   ├── watermark_layout.dart       # 文案+画布+位置 → List<WatermarkItem>（纯函数）
 │   │   ├── watermark_painter.dart      # 按 items 绘制到 Canvas（预览与输出共用）
 │   │   ├── image_renderer.dart         # 解码 → 绘制 → 编码 的编排
 │   │   ├── jpeg_encoder.dart           # platform channel 封装
@@ -168,6 +176,7 @@ idwm/
 │   │   └── settings_page.dart          # 版式与默认样式
 │   └── widgets/
 │       ├── photo_canvas.dart           # CustomPaint 实时预览
+│       ├── watermark_drag_layer.dart   # 单块水印的拖动手势与参考线
 │       ├── text_input_section.dart     # 模板/自由 双模式输入
 │       ├── style_controls.dart         # 透明度/字号/颜色
 │       └── recent_texts_sheet.dart     # 最近文案选择
@@ -178,7 +187,7 @@ idwm/
     └── services/recent_texts_store_test.dart
 ```
 
-页面只有两个：主编辑页（选图、输文案、预览、保存都在这一页）和设置页。这是一个工具型 App，不套 fitutor 那样的多 Tab 结构。
+页面只有两个：主编辑页（选图、输文案、预览、摆位置、保存都在这一页）和设置页。这是一个工具型 App，不套 fitutor 那样的多 Tab 结构。
 
 ### 5.2 组件职责
 
@@ -192,6 +201,9 @@ idwm/
 | `PhotoSaver` | 成品文件 → 系统相册 | `gal` | `save(path)` |
 | `RecentTextsStore` | 读写最近文案与样式 | `shared_preferences` | `load()` / `push(text)` / `saveStyle(style)` |
 | `WatermarkProvider` | 持有当前照片、文案、样式、处理状态，暴露给 UI | 上述 services | `ChangeNotifier` |
+| `WatermarkDragLayer` | 叠加在预览上的透明层：接管拖动手势、算归一化坐标、画参考线 | `WatermarkProvider` | `Stack` 里盖在 `photo_canvas` 之上 |
+
+`WatermarkDragLayer` 只负责「让用户摆水印」，不负责画水印本身 —— 水印仍由 `photo_canvas` 按 `WatermarkLayout` 的结果绘制。拖动改的只是 `WatermarkStyle.singlePosition` 这一个值，预览自然跟着重绘。
 
 ### 5.3 数据流
 
@@ -199,6 +211,11 @@ idwm/
 用户操作 → WatermarkProvider (状态变更) → notifyListeners()
                                               ├─▶ photo_canvas 重绘预览
                                               └─▶ 控件刷新（保存按钮可用性等）
+
+拖动水印 → WatermarkDragLayer 手势
+         → 增量换算成归一化位移
+         → WatermarkProvider.updateSinglePosition(...)
+         → notifyListeners() → photo_canvas 重绘
 
 点保存 → WatermarkProvider.save()
        → ImageRenderer.render(原图路径, 文案, 样式)
@@ -214,6 +231,7 @@ enum WatermarkLayoutMode { tile, single }
 /// 水印样式，需可序列化为 JSON 存入 shared_preferences
 class WatermarkStyle {
   final WatermarkLayoutMode mode;  // 默认 tile
+  final Offset singlePosition;     // 归一化 0–1，默认 (0.5, 0.5)，仅单块模式使用
   final double opacity;            // 默认 0.28
   final double fontSizeRatio;      // 相对短边，默认 0.045
   final int colorValue;            // ARGB，默认 0xFF404040
@@ -237,7 +255,9 @@ class TemplateFields {
 
 `WatermarkItem` 刻意不带颜色和透明度 —— 这两项属于整张图的样式，放在 `WatermarkStyle` 里由绘制层统一施加，避免每条指令重复携带。这样将来若要支持"两种颜色交替平铺"之类的效果，只需扩展 `WatermarkItem` 的可选字段。
 
-`WatermarkStyle` 在构造与反序列化时把 `opacity`、`fontSizeRatio` 夹到第 4.4 节的合法区间，颜色只接受色板内的值。这样即使持久化的数据被改坏，布局层也不会算出离谱的结果。
+`WatermarkStyle` 在构造与反序列化时把 `opacity`、`fontSizeRatio` 夹到第 4.4 节的合法区间，把 `singlePosition` 的两个分量夹到 0–1，颜色只接受色板内的值。这样即使持久化的数据被改坏，布局层也不会算出离谱的结果。
+
+`singlePosition` 存的是**归一化坐标**而非像素。所以它天然与照片分辨率无关：同一张照片的预览和成品图、竖图与横图、换一张尺寸完全不同的照片，位置都按同一个比例生效。
 
 ## 7. 水印布局算法
 
@@ -290,11 +310,49 @@ class WatermarkLayout {
 
 ### 7.3 单块算法
 
-文案作为一行，中心对齐画布中心，`fontSize = shortSide × style.fontSizeRatio × 1.2`（单块没有平铺的视觉密度，字号略放大以保持可读），`rotation = 0`。
+只有一条指令，`rotation = 0`，`fontSize = shortSide × style.fontSizeRatio × 1.2`（单块没有平铺的视觉密度，字号略放大以保持可读）。
 
-### 7.4 预览与输出的一致性
+中心点由 `style.singlePosition` 按画布尺寸换算，**再做夹取**，保证文字完整落在画面内：
 
-预览的 `CustomPaint` 与成品图的离屏渲染，**调用同一个 `WatermarkLayout.compute` 和同一个 `WatermarkPainter`**，区别只是画布尺寸不同。因为字号按短边比例计算，两者算出的指令在各自坐标系里是等比的，用户所见即所得。
+```
+fw, fh = 文字宽高（由 measure 得到）
+px = singlePosition.dx × w
+py = singlePosition.dy × h
+
+x = (fw <= w) ? px.clamp(fw/2, w − fw/2) : w/2
+y = (fh <= h) ? py.clamp(fh/2, h − fh/2) : h/2
+```
+
+- 夹取在**每次计算时按当前画布尺寸做**，而不是在拖动时写死。因为文字宽高和画布尺寸等比缩放，预览与成品图会夹取到等比的位置，两者一致
+- 文字比画布还宽或还高时（超长文案配窄图），该方向改为居中。这是无奈的降级：此时文字本身已无法完整显示。见第 12 节的已知限制
+- `clamp` 只在 `fw <= w` 时调用，避免最小值大于最大值
+
+### 7.4 拖动与坐标换算
+
+`WatermarkDragLayer` 用 `GestureDetector` 的 `onPanStart / onPanUpdate / onPanEnd`：
+
+```
+onPanUpdate:
+  delta = details.delta                              // 屏幕像素增量
+  singlePosition += Offset(delta.dx / previewWidth,
+                           delta.dy / previewHeight) // 转成归一化增量
+  再夹到 0–1
+```
+
+用**增量**而不是「把水印中心设到手指位置」，这样水印不会在按下瞬间跳到手指下方，拖动手感是跟手的。
+
+两处边界处理分工明确：
+
+- 拖动结束前把 `singlePosition` 夹到 0–1 —— 保证持久化的值始终合法
+- 渲染时按第 7.3 节再夹一次 —— 保证文字完整可见
+
+拖动期间显示十字参考线：一条水平线、一条垂直线，穿过水印中心，跟随拖动实时更新，`onPanEnd` 时隐藏。参考线只画在预览层，不会被保存进成品图。
+
+手势冲突：预览区在 `edit_page` 里占一块固定高度的区域，不放在可滚动容器内部，因此拖动手势不会和页面滚动打架。
+
+### 7.5 预览与输出的一致性
+
+预览的 `CustomPaint` 与成品图的离屏渲染，**调用同一个 `WatermarkLayout.compute` 和同一个 `WatermarkPainter`**，区别只是画布尺寸不同。因为字号按短边比例计算，`singlePosition` 又是归一化的，两者算出的指令在各自坐标系里是等比的，用户所见即所得。
 
 ## 8. 渲染与输出管线
 
@@ -384,6 +442,7 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 渲染过程内存不足 | 捕获异常，提示「图片过大，处理失败」，建议先裁剪 |
 | 平台通道不可用 | 回退保存 PNG，并提示文件较大（见 8.5） |
 | 保存过程中 App 切到后台 | 处理期间禁用保存按钮并显示进度，不额外做后台保活 |
+| 未选图时在预览区拖动 | 无预览则无拖动层，手势不产生任何效果 |
 
 渲染是几百毫秒量级的同步重活，期间显示进度指示并禁用重复点击，避免用户连点造成并发渲染。
 
@@ -394,11 +453,12 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 被测 | 要点 |
 |---|---|
 | `TemplateComposer` | 四种字段组合的句式正确；日期格式为 `YYYY-MM-DD`；含空格、超长接收方等边界 |
-| `WatermarkLayout` | 注入假测量器。断言：平铺指令条数 > 0；所有指令 rotation 等于 −30°；字号等于短边 × 比例；单块模式只有一条且居中；超宽图与超窄图不产生空区间；空文案返回空列表 |
-| `WatermarkStyle` | JSON 往返序列化；非法值（透明度越界、比例越界）被夹到合法区间 |
+| `WatermarkLayout` 平铺 | 注入假测量器。断言：指令条数 > 0；所有指令 rotation 等于 −30°；字号等于短边 × 比例；超宽图与超窄图不产生空区间；空文案返回空列表 |
+| `WatermarkLayout` 单块 | 位置 (0.5, 0.5) 时居中；位置 (0, 0) 与 (1, 1) 时文字仍完整落在画布内（即夹取生效）；文字宽高超过画布时该方向居中；同一归一化位置在两种画布尺寸下产生等比的结果 |
+| `WatermarkStyle` | JSON 往返序列化；`singlePosition` 越界时被夹到 0–1；非法值（透明度越界、比例越界）被夹到合法区间 |
 | `RecentTextsStore` | 用 `SharedPreferences.setMockInitialValues` 注入；超出 10 条时淘汰最旧；去重；样式读写往返 |
 
-布局算法不依赖真图，是本项目测试覆盖的重点，也是它被设计成纯函数的直接收益。
+布局算法不依赖真图，是本项目测试覆盖的重点，也是它被设计成纯函数的直接收益。「同一归一化位置在不同画布尺寸下等比」这条尤其重要 —— 它守的是预览与成品一致这件用户能直接看见的事。
 
 ### 11.2 Widget 测试
 
@@ -406,10 +466,12 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - 文案为空时保存按钮禁用
 - 调节透明度/字号后预览 `CustomPaint` 收到重绘
 - 选图前主区域显示空状态引导
+- 在预览区拖动后 `singlePosition` 变化，且被夹在 0–1 内
+- 拖动过程中参考线出现，松手后消失
 
 ### 11.3 不做自动化、改为真机手测
 
-相册读写、平台通道编码、权限弹窗、大图内存表现 —— 这几项依赖真实设备与系统对话框，自动化成本高于收益，归入手测清单（见 12.1）。
+相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感 —— 这几项依赖真实设备与系统对话框，自动化成本高于收益，归入手测清单（见 12.1）。
 
 ## 12. 风险与验证点
 
@@ -421,8 +483,15 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 4000×3000 照片的内存峰值 | 可能触发 OOM | 真机连续处理多张大图，观察是否被系统杀死 |
 | 中文在个别设备上的字体回退 | 水印显示为方框 | 真机在 iOS 与 Android 各验证一次 |
 | 平台通道两端行为差异（Android `Bitmap` 与 iOS `UIImage`） | 输出画质或方向不一致 | 同一张图两端各跑一遍，比对成品 |
+| 单块水印拖到某位置后换成一张长宽比差别很大的照片 | 位置观感可能不如预期 | 归一化坐标已保证等比，真机确认；不为此引入吸附 |
 
-### 12.1 手测清单
+### 12.1 已知限制
+
+- 单块模式下，若文案宽度超过图片宽度（超长文案配窄图），文字无法完整显示，该方向改为居中。平铺模式没有这个问题。这是有意接受的结果，不做自动缩小字号 —— 那会违背「字号由用户设定」的约定
+- 单块水印只支持水平文字，不支持旋转或竖排
+- 平铺模式的位置与角度不可调
+
+### 12.2 手测清单
 
 1. 竖拍、横拍照片各一张，确认水印方向与照片一致
 2. 相册权限首次拒绝 → 再次保存 → 引导开启 → 成功保存
@@ -431,6 +500,9 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 5. 换机验证中文渲染
 6. 保存后的成品在系统相册中可正常查看与分享
 7. 确认原图未被修改
+8. 单块模式把水印拖到四个角落，确认文字都完整可见、没被推出画面
+9. 单块模式拖到某个位置后切到平铺再切回来，确认位置还在
+10. 拖动时的参考线只在预览里出现，成品图上没有
 
 ## 13. 实施里程碑
 
@@ -439,11 +511,12 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 阶段 | 内容 | 完成标志 |
 |---|---|---|
 | M1 | Flutter 工程骨架、4 个依赖、权限配置、包名 | 空 App 在 Android 与 iOS 上能跑起来 |
-| M2 | 模型与服务层纯逻辑（TemplateComposer、WatermarkLayout、WatermarkStyle） | 单元测试通过 |
+| M2 | 模型与服务层纯逻辑（TemplateComposer、WatermarkLayout、WatermarkStyle 含位置与夹取） | 单元测试通过 |
 | M3 | 选图、输入区、预览画布、样式控件 | 能在界面上选图并实时看到预览 |
-| M4 | 渲染管线、platform channel、保存相册 | 真机上保存出带水印的 JPEG |
-| M5 | 设置持久化、最近文案、错误提示与空状态 | 重启 App 后设置与最近文案仍在 |
-| M6 | 手测清单全过、权限文案打磨 | 手测清单 7 项全部通过 |
+| M4 | 单块水印的拖动摆放与参考线 | 能把水印拖到任意位置，边缘被夹住，位置可持久化 |
+| M5 | 渲染管线、platform channel、保存相册 | 真机上保存出带水印的 JPEG |
+| M6 | 设置持久化、最近文案、错误提示与空状态 | 重启 App 后设置、位置与最近文案仍在 |
+| M7 | 手测清单全过、权限文案打磨 | 手测清单 10 项全部通过 |
 
 ## 14. 与 fitutor 的差异（备查）
 
