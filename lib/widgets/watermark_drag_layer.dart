@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/watermark_provider.dart';
+import '../services/text_painter_measurer.dart';
+import '../services/watermark_layout.dart';
 
 /// 叠在预览上的手势层：拖动水印，并在单块模式拖动期间画十字参考线。
 ///
@@ -54,6 +56,12 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
                   child: IgnorePointer(
                     child: CustomPaint(
                       painter: _GuideLinePainter(
+                        position: WatermarkLayout.guideCenter(
+                          canvasSize: size,
+                          text: provider.effectiveText,
+                          style: provider.style,
+                          measure: TextPainterMeasurer.measure,
+                        ),
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
@@ -67,28 +75,30 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
   }
 }
 
-/// 穿过照片正中的十字参考线。只画在预览层，不会进成品图。
+/// 穿过水印中心的十字参考线。只画在预览层，不会进成品图。
 class _GuideLinePainter extends CustomPainter {
-  const _GuideLinePainter({required this.color});
+  const _GuideLinePainter({required this.position, required this.color});
 
+  final Offset position; // 归一化
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 保留裁剪，与项目里其它 CustomPainter 保持一致。
+    // 保留裁剪：位置理论上在 0–1 内，但与项目里其它 painter 保持一致。
     canvas.clipRect(Offset.zero & size);
 
     final paint = Paint()
       ..color = color.withValues(alpha: 0.7)
       ..strokeWidth = 1;
 
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
+    final x = position.dx * size.width;
+    final y = position.dy * size.height;
 
-    canvas.drawLine(Offset(centerX, 0), Offset(centerX, size.height), paint);
-    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), paint);
+    canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
   }
 
   @override
-  bool shouldRepaint(_GuideLinePainter old) => old.color != color;
+  bool shouldRepaint(_GuideLinePainter old) =>
+      old.position != position || old.color != color;
 }

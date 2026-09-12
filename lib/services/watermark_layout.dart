@@ -50,6 +50,55 @@ class WatermarkLayout {
     }
   }
 
+  /// 旋转 θ 后，网格在画布两个轴上的真实跨度。
+  static (double, double) _spans(Size canvasSize) {
+    final cosT = math.cos(tileAngle).abs();
+    final sinT = math.sin(tileAngle).abs();
+    final extentX = canvasSize.width * cosT + canvasSize.height * sinT;
+    final extentY = canvasSize.width * sinT + canvasSize.height * cosT;
+    return (
+      extentX * cosT + extentY * sinT,
+      extentX * sinT + extentY * cosT,
+    );
+  }
+
+  /// 水印图层的中心在画布上的归一化位置，供拖动参考线使用。
+  ///
+  /// - 单块模式：文字实际绘制位置（已含边界夹取）
+  /// - 平铺模式：网格中心，即画布中心加上网格的整体偏移
+  static Offset guideCenter({
+    required Size canvasSize,
+    required String text,
+    required WatermarkStyle style,
+    required TextMeasurer measure,
+  }) {
+    final w = canvasSize.width;
+    final h = canvasSize.height;
+    if (w <= 0 || h <= 0 || !w.isFinite || !h.isFinite) {
+      return const Offset(0.5, 0.5);
+    }
+
+    final trimmed = text.trim();
+    final shortSide = canvasSize.shortestSide;
+
+    switch (style.mode) {
+      case WatermarkLayoutMode.single:
+        if (trimmed.isEmpty || shortSide <= 0 || !shortSide.isFinite) {
+          return const Offset(0.5, 0.5);
+        }
+        // 复用 _single 的夹取结果，保证与真实绘制位置一致
+        final items = _single(canvasSize, trimmed, style, measure, shortSide);
+        if (items.isEmpty) return const Offset(0.5, 0.5);
+        return Offset(items.first.center.dx / w, items.first.center.dy / h);
+
+      case WatermarkLayoutMode.tile:
+        final (spanX, spanY) = _spans(canvasSize);
+        final shiftX = style.tileOffset.dx * (w + spanX) / 2;
+        final shiftY = style.tileOffset.dy * (h + spanY) / 2;
+        return Offset((w / 2 + shiftX) / w, (h / 2 + shiftY) / h);
+    }
+  }
+
   static List<WatermarkItem> _tile(
     Size canvasSize,
     String text,
@@ -84,8 +133,7 @@ class WatermarkLayout {
     // 若按画布边长缩放，网格旋转留下的这段余量会先吃掉一大半位移，
     // 实际露出的空白远小于 offset 的预期。这样 offset = 0 是铺满、
     // = 1 是完全移出（100% 空白），中间近似成正比。
-    final spanX = extentX * cosT.abs() + extentY * sinT.abs();
-    final spanY = extentX * sinT.abs() + extentY * cosT.abs();
+    final (spanX, spanY) = _spans(canvasSize);
     final shift = Offset(
       style.tileOffset.dx * (canvasSize.width + spanX) / 2,
       style.tileOffset.dy * (canvasSize.height + spanY) / 2,

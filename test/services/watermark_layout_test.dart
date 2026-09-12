@@ -229,4 +229,73 @@ void main() {
       expect(large.fontSize, closeTo(small.fontSize * 2, 1e-9));
     });
   });
+
+  group('guideCenter 参考线位置', () {
+    test('单块模式返回夹取后的文字中心', () {
+      const canvas = Size(1200, 900);
+      const style = WatermarkStyle(
+        mode: WatermarkLayoutMode.single,
+        singlePosition: Offset(0, 0), // 故意拖到左上角，应被夹取
+      );
+      final center = WatermarkLayout.guideCenter(
+        canvasSize: canvas,
+        text: text,
+        style: style,
+        measure: fakeMeasure,
+      );
+
+      // 应当与真正的绘制位置一致
+      final drawn = WatermarkLayout.compute(
+        canvasSize: canvas,
+        text: text,
+        style: style,
+        measure: fakeMeasure,
+      ).single.center;
+      expect(center.dx * canvas.width, closeTo(drawn.dx, 1e-6));
+      expect(center.dy * canvas.height, closeTo(drawn.dy, 1e-6));
+    });
+
+    test('平铺模式偏移为 0 时返回画布中心', () {
+      final center = WatermarkLayout.guideCenter(
+        canvasSize: const Size(1200, 900),
+        text: text,
+        style: const WatermarkStyle(),
+        measure: fakeMeasure,
+      );
+      expect(center.dx, closeTo(0.5, 1e-9));
+      expect(center.dy, closeTo(0.5, 1e-9));
+    });
+
+    test('平铺模式返回网格中心，而非简单累加 tileOffset', () {
+      const canvas = Size(1200, 900);
+      const off = Offset(0.75, 0);
+      final center = WatermarkLayout.guideCenter(
+        canvasSize: canvas,
+        text: text,
+        style: const WatermarkStyle(tileOffset: off),
+        measure: fakeMeasure,
+      );
+
+      // 网格实际位移 = offset × (画布边长 + 跨度) / 2
+      const theta = math.pi / 6;
+      final extentX = canvas.width * math.cos(theta).abs() + canvas.height * math.sin(theta).abs();
+      final extentY = canvas.width * math.sin(theta).abs() + canvas.height * math.cos(theta).abs();
+      final spanX = extentX * math.cos(theta).abs() + extentY * math.sin(theta).abs();
+      final expected = 0.5 + off.dx * (canvas.width + spanX) / 2 / canvas.width;
+
+      expect(center.dx, closeTo(expected, 1e-6));
+      // 而且它必须明显大于「简单累加」的 1.25，否则就是旧 bug
+      expect(center.dx, greaterThan(1.25));
+    });
+
+    test('画布尺寸无效时回落到中心', () {
+      final center = WatermarkLayout.guideCenter(
+        canvasSize: Size.zero,
+        text: text,
+        style: const WatermarkStyle(),
+        measure: fakeMeasure,
+      );
+      expect(center, const Offset(0.5, 0.5));
+    });
+  });
 }
