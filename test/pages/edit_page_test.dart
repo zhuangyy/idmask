@@ -136,16 +136,30 @@ void main() {
   testWidgets('点最近照片按钮能弹出空状态', (tester) async {
     await pumpPage(tester);
 
-    // 按钮文案是「最近照片（0）」，且是 OutlinedButton.icon（私有子类），
-    // 所以按包含文本定位再向上找 OutlinedButton。
+    // 按钮文案是「最近照片（0）」，已挪到标题栏，是 TextButton.icon（私有子类），
+    // 所以按包含文本定位再向上找 TextButton。
     final button = find.ancestor(
       of: find.textContaining('最近照片'),
-      matching: find.byWidgetPredicate((Widget w) => w is OutlinedButton),
+      matching: find.byWidgetPredicate((Widget w) => w is TextButton),
     );
     await reveal(tester, button);
     await tester.tap(button);
     await tester.pumpAndSettle();
 
     expect(find.text('还没有用过的照片'), findsOneWidget);
+  });
+
+  testWidgets('点最近文案按钮能弹出空状态', (tester) async {
+    await pumpPage(tester);
+
+    final button = find.ancestor(
+      of: find.textContaining('最近文案'),
+      matching: find.byWidgetPredicate((Widget w) => w is TextButton),
+    );
+    await reveal(tester, button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(find.text('还没有用过的文案'), findsOneWidget);
   });
 }

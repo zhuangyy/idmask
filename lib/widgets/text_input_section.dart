@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/watermark_provider.dart';
 
+import 'recent_texts_sheet.dart';
+
 /// 水印文案输入。只有一个输入框，外加一个把今天日期插进光标处的快捷按钮。
 class TextInputSection extends StatelessWidget {
   const TextInputSection({super.key});
@@ -10,15 +12,24 @@ class TextInputSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WatermarkProvider>();
-    return _TextInput(text: provider.text, onChanged: provider.setText);
+    return _TextInput(
+      text: provider.text,
+      onChanged: provider.setText,
+      recentTextsCount: provider.recentTexts.length,
+    );
   }
 }
 
 class _TextInput extends StatefulWidget {
-  const _TextInput({required this.text, required this.onChanged});
+  const _TextInput({
+    required this.text,
+    required this.onChanged,
+    required this.recentTextsCount,
+  });
 
   final String text;
   final ValueChanged<String> onChanged;
+  final int recentTextsCount;
 
   @override
   State<_TextInput> createState() => _TextInputState();
@@ -90,13 +101,20 @@ class _TextInputState extends State<_TextInput> {
           ),
           onChanged: widget.onChanged,
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: _insertToday,
-            icon: const Icon(Icons.calendar_today_outlined, size: 18),
-            label: const Text('插入今天日期'),
-          ),
+        Row(
+          children: <Widget>[
+            TextButton.icon(
+              onPressed: () => showRecentTextsSheet(context),
+              icon: const Icon(Icons.history, size: 18),
+              label: Text('最近文案（${widget.recentTextsCount}）'),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _insertToday,
+              icon: const Icon(Icons.calendar_today_outlined, size: 18),
+              label: const Text('插入今天日期'),
+            ),
+          ],
         ),
       ],
     );
