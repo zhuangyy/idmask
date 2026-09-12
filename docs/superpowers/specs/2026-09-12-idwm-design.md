@@ -40,7 +40,7 @@
 | 架构分层 | `UI(pages/widgets) → State(Provider) → Services → Data` |
 | 网络 | 无。100% 离线，App 自身不发起任何网络请求 |
 | 测试 | `flutter_test` |
-| 本地存储 | `shared_preferences`（不建数据库表） |
+| 本地存储 | `shared_preferences`（不建数据库表）+ App 私有目录放照片副本 |
 
 ### 网络与代理
 
@@ -52,20 +52,21 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ## 3. 依赖
 
-已获用户同意安装以下 4 个包。除此之外不引入第三方依赖；水印绘制使用 Flutter 内置的 `dart:ui`。
+已获用户同意安装以下 4 个包。除此之外不引入第三方依赖；水印绘制使用 Flutter 内置的 `dart:ui`，去重指纹用自己写的哈希，缩略图用 `dart:ui` 缩放。
 
 | 包 | 用途 | 备注 |
 |---|---|---|
 | `image_picker` | 从相册选择照片 | Flutter 官方插件 |
 | `gal` | 把成品图保存到系统相册 | Android 10+ 免存储权限 |
-| `shared_preferences` | 记住最近文案与样式设置 | Flutter 官方插件 |
-| `path_provider` | 取临时目录写中间文件 | Flutter 官方插件 |
+| `shared_preferences` | 记住最近文案、最近照片元数据与样式设置 | Flutter 官方插件 |
+| `path_provider` | 取私有目录与临时目录 | Flutter 官方插件 |
 
 明确不引入：
 
 - `image`（纯 Dart 图像库）—— 见第 8 节，JPEG 编码改由平台通道完成
 - `sqflite` —— 无表结构需求，`shared_preferences` 足够
 - `permission_handler` —— 只在权限被拒时提示用户去系统设置，不做深链跳转
+- `crypto` —— 去重指纹只需自己写的轻量哈希，不必为此引入加密库
 
 ## 4. 功能范围
 
@@ -73,7 +74,7 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ```
 选图 ──▶ 输文案 ──▶ 实时预览 ──▶ 保存到相册
-         (模板/自由)   (版式/样式/摆位置)
+（相册 / 最近照片）  (模板/自由)   (版式/样式/摆位置)
 ```
 
 ### 4.2 文案：模板与自由编辑双模式
@@ -132,7 +133,35 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 记住最近使用过的 10 条水印文案，以列表形式供一键复用，新的挤掉最旧的。样式设置（版式、位置、透明度、字号、颜色）同样持久化，作为下次打开时的初始值。
 
-### 4.6 保存行为
+### 4.6 最近照片
+
+用过的证件照往往是固定的那几张（身份证、学历证、户口本）。每次都去相册里翻找很费事，所以要有一个「最近照片」入口，一键选回之前用过的照片。
+
+**行为**
+
+- 选中照片后，App 会把照片复制一份到自己的私有目录，并把它加入「最近照片」列表，最多保留 10 张
+- 超过 10 张时淘汰最旧的，同时删掉它对应的文件
+- 列表以缩略图网格展示，按加入时间从新到旧排列，显示加入时间
+- 点缩略图即选为当前照片
+- **长按缩略图可删除单张**；列表底部提供**一键清空**
+- 同一张照片重复选择不会在列表里堆出多条（按内容指纹去重，见第 6 节）
+
+**为什么选中就复制，而不是保存了才复制**
+
+`image_picker` 给的是系统临时路径，系统随时会清理它。如果不立刻复制一份，这个快捷入口会时灵时不灵。既然「最近照片」要可靠，就得在选中时就把副本落下来。
+
+代价是：即使用户只是选来看看、没有保存成品，App 里也会留下这份副本。为了不让它积累，有 10 张上限、可单张删除、可一键清空三道口子。若你希望改成「只有保存过成品的照片才进最近列表」，告诉一声，改动只涉及一处调用时机。
+
+**存储位置与隐私**
+
+- 副本放在 App 私有目录（`getApplicationSupportDirectory()` 下的 `idwm_photos/`）。这个目录其他 App 读不到，用户也不能通过文件管理器翻到
+- 卸载 App 时，副本随沙盒一并删除
+- **iOS 上把该目录标记为不参与 iCloud 备份**（`NSURLIsExcludedFromBackupKey`），避免证件照副本被同步到 iCloud 之外的地方
+- App 全程不联网，副本不会离开这台手机
+- 缩略图另存于 `idwm_photos/thumbs/`，长边 240 px，用于列表展示，避免加载列表时把 10 张原图全解码
+- App 启动时清理一次孤儿文件（目录里有、元数据里没有的），防止异常退出留下无主副本
+
+### 4.7 保存行为
 
 - 成品图**另存**到系统相册，**原图保持不动**
 - 输出格式 JPEG，质量为 92
@@ -160,11 +189,14 @@ idwm/
 │   ├── models/
 │   │   ├── watermark_style.dart  # 版式/位置/透明度/字号/颜色 + 序列化
 │   │   ├── watermark_item.dart   # 单条水印的绘制指令
+│   │   ├── recent_photo.dart     # 最近照片的元数据
 │   │   └── template_fields.dart  # 接收方/用途/日期
 │   ├── services/
 │   │   ├── template_composer.dart      # 模板字段 → 文案（纯函数）
 │   │   ├── watermark_layout.dart       # 文案+画布+位置 → List<WatermarkItem>（纯函数）
 │   │   ├── watermark_painter.dart      # 按 items 绘制到 Canvas（预览与输出共用）
+│   │   ├── photo_fingerprint.dart      # 文件内容指纹，用于去重（纯函数）
+│   │   ├── recent_photos_store.dart    # 照片副本 + 缩略图 + 元数据的增删查
 │   │   ├── image_renderer.dart         # 解码 → 绘制 → 编码 的编排
 │   │   ├── jpeg_encoder.dart           # platform channel 封装
 │   │   ├── photo_saver.dart            # gal 封装
@@ -179,15 +211,19 @@ idwm/
 │       ├── watermark_drag_layer.dart   # 单块水印的拖动手势与参考线
 │       ├── text_input_section.dart     # 模板/自由 双模式输入
 │       ├── style_controls.dart         # 透明度/字号/颜色
+│       ├── recent_photos_sheet.dart    # 最近照片网格、删除、清空
 │       └── recent_texts_sheet.dart     # 最近文案选择
 └── test/
     ├── models/watermark_style_test.dart
+    ├── models/recent_photo_test.dart
     ├── services/template_composer_test.dart
     ├── services/watermark_layout_test.dart
+    ├── services/photo_fingerprint_test.dart
+    ├── services/recent_photos_store_test.dart
     └── services/recent_texts_store_test.dart
 ```
 
-页面只有两个：主编辑页（选图、输文案、预览、摆位置、保存都在这一页）和设置页。这是一个工具型 App，不套 fitutor 那样的多 Tab 结构。
+页面只有两个：主编辑页（选图、输文案、预览、摆位置、保存都在这一页）和设置页。最近照片与最近文案都以底部弹层的形式从主编辑页唤起，不占独立页面。这是一个工具型 App，不套 fitutor 那样的多 Tab 结构。
 
 ### 5.2 组件职责
 
@@ -196,14 +232,18 @@ idwm/
 | `TemplateComposer` | 三个字段 + 日期 → 一句文案 | 无 | `compose(fields)` 纯函数 |
 | `WatermarkLayout` | 画布尺寸 + 文案 + 样式 → 绘制指令列表 | 注入的文字测量器 | `compute(...)` 纯函数 |
 | `WatermarkPainter` | 把绘制指令画到任意 `Canvas` 上 | `dart:ui` | 预览与输出调同一个函数 |
+| `PhotoFingerprint` | 由文件字节算出用于去重的指纹 | 无 | `of(bytes)` 纯函数 |
+| `RecentPhotosStore` | 照片副本与缩略图的增删查、容量淘汰、孤儿清理 | 注入的根目录 + `shared_preferences` | `load()` / `add(path)` / `remove(id)` / `clear()` |
 | `ImageRenderer` | 组织整条管线：读文件 → 解码 → 画 → 编码 JPEG → 写临时文件 | 上面几个 + `JpegEncoder` | `render(request)` 返回成品文件路径 |
 | `JpegEncoder` | PNG 字节 → JPEG 字节 | platform channel | `encode(png, quality)` |
 | `PhotoSaver` | 成品文件 → 系统相册 | `gal` | `save(path)` |
 | `RecentTextsStore` | 读写最近文案与样式 | `shared_preferences` | `load()` / `push(text)` / `saveStyle(style)` |
-| `WatermarkProvider` | 持有当前照片、文案、样式、处理状态，暴露给 UI | 上述 services | `ChangeNotifier` |
+| `WatermarkProvider` | 持有当前照片、文案、样式、最近照片列表、处理状态，暴露给 UI | 上述 services | `ChangeNotifier` |
 | `WatermarkDragLayer` | 叠加在预览上的透明层：接管拖动手势、算归一化坐标、画参考线 | `WatermarkProvider` | `Stack` 里盖在 `photo_canvas` 之上 |
 
 `WatermarkDragLayer` 只负责「让用户摆水印」，不负责画水印本身 —— 水印仍由 `photo_canvas` 按 `WatermarkLayout` 的结果绘制。拖动改的只是 `WatermarkStyle.singlePosition` 这一个值，预览自然跟着重绘。
+
+`RecentPhotosStore` 的根目录是**构造时注入**的，不是内部去调 `path_provider`。这样单元测试传一个临时目录就能完整覆盖复制、淘汰、删除、孤儿清理，不需要 mock 插件。
 
 ### 5.3 数据流
 
@@ -212,16 +252,26 @@ idwm/
                                               ├─▶ photo_canvas 重绘预览
                                               └─▶ 控件刷新（保存按钮可用性等）
 
+选图 → image_picker 返回临时路径
+     → RecentPhotosStore.add(临时路径)
+         ├─ 算内容指纹，已在列表里就复用旧记录
+         ├─ 复制到私有目录 + 生成缩略图
+         └─ 写元数据、超 10 张淘汰最旧
+     → WatermarkProvider.setPhoto(副本路径)
+     → notifyListeners() → 预览刷新
+
 拖动水印 → WatermarkDragLayer 手势
          → 增量换算成归一化位移
          → WatermarkProvider.updateSinglePosition(...)
          → notifyListeners() → photo_canvas 重绘
 
 点保存 → WatermarkProvider.save()
-       → ImageRenderer.render(原图路径, 文案, 样式)
+       → ImageRenderer.render(当前照片路径, 文案, 样式)
        → PhotoSaver.save(成品路径)
        → 回写最近文案 → 反馈结果
 ```
+
+注意保存那一步读的是**副本路径**，不是临时路径 —— 因为选图时已经统一落到私有目录了。这样「选完图之后临时文件被系统清掉」不会影响后续任何操作。
 
 ## 6. 核心数据结构
 
@@ -245,6 +295,12 @@ class WatermarkItem {
   final double rotation; // 弧度
 }
 
+/// 最近照片的元数据（图片文件本身在私有目录里，这里只记索引信息）
+class RecentPhoto {
+  final String id;         // 副本文件名（不含扩展名），同时是列表键
+  final DateTime addedAt;  // 加入时间，用于排序与展示
+}
+
 /// 模板字段
 class TemplateFields {
   final String receiver; // 接收方
@@ -258,6 +314,36 @@ class TemplateFields {
 `WatermarkStyle` 在构造与反序列化时把 `opacity`、`fontSizeRatio` 夹到第 4.4 节的合法区间，把 `singlePosition` 的两个分量夹到 0–1，颜色只接受色板内的值。这样即使持久化的数据被改坏，布局层也不会算出离谱的结果。
 
 `singlePosition` 存的是**归一化坐标**而非像素。所以它天然与照片分辨率无关：同一张照片的预览和成品图、竖图与横图、换一张尺寸完全不同的照片，位置都按同一个比例生效。
+
+### 6.1 去重指纹
+
+`PhotoFingerprint.of(bytes)` 返回一个字符串，用于判断「这次选的照片是不是已经在列表里」。做法是：
+
+```
+指纹 = 文件总字节数 + FNV-1a(首 4KB + 中间 4KB + 末 4KB)
+```
+
+只抽样三段而不是读全文件，是为了不为了去重多读一遍几 MB 的字节。对证件照这种体积和内容都有明显差异的场景，这个强度足够了 —— 它要防的是「用户重复选同一张」，不是恶意构造碰撞。
+
+用自己写的 FNV-1a 而不是 `crypto` 包的 SHA-256，是因为不值得为这个用途多引入一个依赖。算法是纯函数，可单独测试。
+
+### 6.2 存储布局
+
+```
+<ApplicationSupportDirectory>/idwm_photos/
+├── <id>.jpg              # 原图副本，id 形如 1757654321000_a1b2c3
+└── thumbs/<id>.png       # 缩略图，长边 240 px
+```
+
+`shared_preferences` 里的键：
+
+| 键 | 内容 |
+|---|---|
+| `recent_photos` | `RecentPhoto` 数组的 JSON |
+| `recent_texts` | 最近文案数组的 JSON |
+| `watermark_style` | `WatermarkStyle` 的 JSON |
+
+副本一律存成 `.jpg`。若源图是 PNG 或其它格式，解码后统一按 JPEG 写入（复用 `JpegEncoder`）；平台通道不可用时按 8.5 的降级路径写成 PNG，扩展名随之改为 `.png`，读取时以元数据里的 id 为准、按实际存在的文件后缀查找。
 
 ## 7. 水印布局算法
 
@@ -399,6 +485,8 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 
 平台通道不存在或抛错时（例如未来某平台未实现原生侧），**回退为直接保存 PNG**，功能仍可用，只是文件更大，并提示用户。降级而非失败，因为用户的目的是拿到加了水印的照片。
 
+这条降级路径同时被第 6.2 节的照片副本写入复用：通道不可用时副本也写成 PNG，扩展名随之改变。
+
 ## 9. 权限与平台配置
 
 ### 9.1 Android
@@ -409,6 +497,8 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - 取图优先走系统照片选择器：`image_picker` 在受支持的 Android 版本上使用系统照片选择器，不要求声明相册读取权限。实现时先不声明 `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE`，真机上确认低版本也能取图；若确有版本取图失败，再补最小必要的那一个权限
 - 写入相册：`gal` 在 Android 10+ 通过 MediaStore 保存，无需权限；Android 9 及以下需要 `WRITE_EXTERNAL_STORAGE`
 - `applicationId` 与 `namespace` 均为 `com.xzgg.idwm`
+
+不需要为「最近照片」申请任何权限 —— 副本写在 App 自己的私有目录里，不涉及外部存储。
 
 `android/gradle.properties` 里按 fitutor 的做法预配 SOCKS5 代理，供 Gradle 拉依赖。
 
@@ -425,6 +515,8 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 
 两个权限说明文案都要写清楚用途，不能是占位符 —— 这是 App Store 审核的常见退回点。
 
+另外，创建 `idwm_photos/` 目录时给它设置 `NSURLIsExcludedFromBackupKey`，把证件照副本排除出 iCloud 备份。这是第 4.6 节隐私承诺的一部分，不要漏。
+
 ### 9.3 字体
 
 中文水印依赖系统字体（iOS 苹方 / Android 思源黑体）。`TextPainter` 使用默认字体族并配置合理的中文字体回退链，避免在个别设备上渲染成方框。不打包自定义字体，以免增大体积。
@@ -435,6 +527,9 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 |---|---|
 | 用户取消选图 | 静默返回，不报错 |
 | 选中文件无法解码 | 提示「无法读取这张图片，请换一张」 |
+| 复制副本时空间不足 | 提示「存储空间不足」；本次仍用系统临时路径继续处理，只是不进最近列表 |
+| 最近照片对应的文件丢失 | 从列表中剔除该条并提示，不让用户点到一个坏条目 |
+| 缩略图生成失败 | 该格用占位图，不影响选择该照片 |
 | 文案为空 | 保存按钮置灰，不进入渲染 |
 | 相册读取权限被拒 | 提示缺少权限，并引导用户到系统设置开启；不自动跳转 |
 | 相册写入权限被拒 | 同上，并保留成品文件的临时路径以便重试 |
@@ -456,9 +551,14 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | `WatermarkLayout` 平铺 | 注入假测量器。断言：指令条数 > 0；所有指令 rotation 等于 −30°；字号等于短边 × 比例；超宽图与超窄图不产生空区间；空文案返回空列表 |
 | `WatermarkLayout` 单块 | 位置 (0.5, 0.5) 时居中；位置 (0, 0) 与 (1, 1) 时文字仍完整落在画布内（即夹取生效）；文字宽高超过画布时该方向居中；同一归一化位置在两种画布尺寸下产生等比的结果 |
 | `WatermarkStyle` | JSON 往返序列化；`singlePosition` 越界时被夹到 0–1；非法值（透明度越界、比例越界）被夹到合法区间 |
+| `RecentPhoto` | JSON 往返序列化 |
+| `PhotoFingerprint` | 同样的字节得到同样的指纹；改动中间任意一段都会改变指纹；不同长度的文件指纹不同；空字节与超短文件不崩 |
+| `RecentPhotosStore` | **注入临时目录**。复制后副本文件确实存在；重复 add 同一内容只留一条；第 11 条加入时最旧的记录与**它的文件**都被删掉；`remove(id)` 同时删副本与缩略图；`clear()` 后目录里除空目录外无残留；`pruneOrphans()` 清掉元数据里没有的文件；缩略图长边为 240 |
 | `RecentTextsStore` | 用 `SharedPreferences.setMockInitialValues` 注入；超出 10 条时淘汰最旧；去重；样式读写往返 |
 
 布局算法不依赖真图，是本项目测试覆盖的重点，也是它被设计成纯函数的直接收益。「同一归一化位置在不同画布尺寸下等比」这条尤其重要 —— 它守的是预览与成品一致这件用户能直接看见的事。
+
+`RecentPhotosStore` 的测试全部落在真实文件系统上（临时目录里真的写文件、真的删文件），这样断言的是「文件确实没了」而不是「调用过删除方法」。注入根目录的设计就是为了让这个成为可能。
 
 ### 11.2 Widget 测试
 
@@ -468,10 +568,12 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - 选图前主区域显示空状态引导
 - 在预览区拖动后 `singlePosition` 变化，且被夹在 0–1 内
 - 拖动过程中参考线出现，松手后消失
+- 最近照片为空时显示空状态，不显示网格
+- 长按缩略图弹出删除确认，确认后该条从列表消失
 
 ### 11.3 不做自动化、改为真机手测
 
-相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感 —— 这几项依赖真实设备与系统对话框，自动化成本高于收益，归入手测清单（见 12.1）。
+相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感、iCloud 备份排除是否生效 —— 这几项依赖真实设备与系统对话框，自动化成本高于收益，归入手测清单（见 12.2）。
 
 ## 12. 风险与验证点
 
@@ -484,12 +586,16 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 中文在个别设备上的字体回退 | 水印显示为方框 | 真机在 iOS 与 Android 各验证一次 |
 | 平台通道两端行为差异（Android `Bitmap` 与 iOS `UIImage`） | 输出画质或方向不一致 | 同一张图两端各跑一遍，比对成品 |
 | 单块水印拖到某位置后换成一张长宽比差别很大的照片 | 位置观感可能不如预期 | 归一化坐标已保证等比，真机确认；不为此引入吸附 |
+| iOS 未正确排除 iCloud 备份 | 证件照副本可能被同步上云 | 真机开启 iCloud 备份后确认 `idwm_photos/` 不在备份范围内；实现时确保创建目录即设置该键 |
+| 指纹抽样（首/中/末各 4KB）对某些照片区分度不足 | 两张不同照片被误判为同一张 | 抽样覆盖头尾与中段，对常规照片足够；真机上用多张相似照片试一遍 |
 
 ### 12.1 已知限制
 
 - 单块模式下，若文案宽度超过图片宽度（超长文案配窄图），文字无法完整显示，该方向改为居中。平铺模式没有这个问题。这是有意接受的结果，不做自动缩小字号 —— 那会违背「字号由用户设定」的约定
 - 单块水印只支持水平文字，不支持旋转或竖排
 - 平铺模式的位置与角度不可调
+- 最近照片是 App 私有的，不会出现在系统相册里；想在系统相册复用仍需走相册选择
+- 最近照片按内容去重只对比抽样指纹，理论上存在极小概率的误判（见 12 节风险表）
 
 ### 12.2 手测清单
 
@@ -503,6 +609,10 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 8. 单块模式把水印拖到四个角落，确认文字都完整可见、没被推出画面
 9. 单块模式拖到某个位置后切到平铺再切回来，确认位置还在
 10. 拖动时的参考线只在预览里出现，成品图上没有
+11. 选一张照片 → 完全退出 App → 重开 → 从最近照片里一键选回同一张，保存成功
+12. 同一张照片连选三次，确认最近列表里只有一条
+13. 最近照片里长按删掉一张，确认列表少一条；一键清空后确认列表为空
+14. 连续选够 11 张不同照片，确认最旧的那张从列表消失且 App 私有目录里也没有它的文件残留
 
 ## 13. 实施里程碑
 
@@ -511,12 +621,15 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 阶段 | 内容 | 完成标志 |
 |---|---|---|
 | M1 | Flutter 工程骨架、4 个依赖、权限配置、包名 | 空 App 在 Android 与 iOS 上能跑起来 |
-| M2 | 模型与服务层纯逻辑（TemplateComposer、WatermarkLayout、WatermarkStyle 含位置与夹取） | 单元测试通过 |
+| M2 | 模型与服务层纯逻辑（TemplateComposer、WatermarkLayout、WatermarkStyle 含位置与夹取、PhotoFingerprint） | 单元测试通过 |
 | M3 | 选图、输入区、预览画布、样式控件 | 能在界面上选图并实时看到预览 |
 | M4 | 单块水印的拖动摆放与参考线 | 能把水印拖到任意位置，边缘被夹住，位置可持久化 |
-| M5 | 渲染管线、platform channel、保存相册 | 真机上保存出带水印的 JPEG |
-| M6 | 设置持久化、最近文案、错误提示与空状态 | 重启 App 后设置、位置与最近文案仍在 |
-| M7 | 手测清单全过、权限文案打磨 | 手测清单 10 项全部通过 |
+| M5 | 最近照片：副本落盘、缩略图、网格选择、删除与清空、容量淘汰、孤儿清理 | 重启 App 后能一键选回用过的照片；删了文件也没了 |
+| M6 | 渲染管线、platform channel、保存相册 | 真机上保存出带水印的 JPEG |
+| M7 | 设置持久化、最近文案、错误提示与空状态 | 重启 App 后设置、位置与最近文案仍在 |
+| M8 | 手测清单全过、权限文案打磨 | 手测清单 14 项全部通过 |
+
+M5 排在渲染管线之前，是因为「最近照片」只依赖选图这一环，不依赖渲染；早点做完，后续每次调试都不必反复去相册翻照片。
 
 ## 14. 与 fitutor 的差异（备查）
 
@@ -529,3 +642,4 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | 多 Tab `IndexedStack` 导航 | 不要 | 只有主编辑页 + 设置页 |
 | Provider 分三个 | 只要一个 | `WatermarkProvider` 统一持有状态 |
 | 按比例换算尺寸（进度环） | 沿用同类思路 | 水印字号同样按图片短边比例算，保证跨分辨率观感一致 |
+| 本地持久化 | 都需要，但用途不同 | fitutor 存训练数据需建表；idwm 只存文案、样式与照片副本索引，用键值存储足够 |
