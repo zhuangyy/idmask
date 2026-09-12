@@ -1,124 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/template_fields.dart';
 import '../providers/watermark_provider.dart';
-import '../services/template_composer.dart';
 
-/// 模板与自由编辑双模式。两个模式的输入内容各自保留，来回切换不丢东西。
+/// 水印文案输入。只有一个输入框，外加一个把今天日期插进光标处的快捷按钮。
 class TextInputSection extends StatelessWidget {
   const TextInputSection({super.key});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WatermarkProvider>();
+    return _TextInput(text: provider.text, onChanged: provider.setText);
+  }
+}
 
+class _TextInput extends StatefulWidget {
+  const _TextInput({required this.text, required this.onChanged});
+
+  final String text;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_TextInput> createState() => _TextInputState();
+}
+
+class _TextInputState extends State<_TextInput> {
+  late final TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.text);
+  }
+
+  @override
+  void didUpdateWidget(_TextInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 文案被外部改了（例如从「最近文案」里选了一条），同步回输入框。
+    if (widget.text != _controller.text) {
+      _controller.text = widget.text;
+      _controller.selection =
+          TextSelection.collapsed(offset: widget.text.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// 把今天的日期插到光标处；没聚焦时追加到末尾。
+  void _insertToday() {
+    final date = _formatDate(DateTime.now());
+    final selection = _controller.selection;
+    final hasSelection = selection.isValid;
+    final start = hasSelection ? selection.start : _controller.text.length;
+    final end = hasSelection ? selection.end : _controller.text.length;
+    final updated = _controller.text.replaceRange(start, end, date);
+
+    _controller.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: start + date.length),
+    );
+    widget.onChanged(updated);
+    _focusNode.requestFocus();
+  }
+
+  static String _formatDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SegmentedButton<bool>(
-          segments: const <ButtonSegment<bool>>[
-            ButtonSegment<bool>(value: true, label: Text('模板')),
-            ButtonSegment<bool>(value: false, label: Text('自由编辑')),
-          ],
-          selected: <bool>{provider.useTemplate},
-          onSelectionChanged: (selection) =>
-              provider.setUseTemplate(selection.first),
-        ),
-        const SizedBox(height: 12),
-        if (provider.useTemplate)
-          _TemplateFieldsInput(fields: provider.templateFields)
-        else
-          _FreeTextInput(text: provider.freeText),
-        const SizedBox(height: 12),
-        _GeneratedPreview(text: provider.effectiveText),
-      ],
-    );
-  }
-}
-
-class _TemplateFieldsInput extends StatelessWidget {
-  const _TemplateFieldsInput({required this.fields});
-
-  final TemplateFields fields;
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.read<WatermarkProvider>();
-
-    return Column(
-      children: <Widget>[
-        TextFormField(
-          initialValue: fields.receiver,
+        TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          maxLines: 3,
           decoration: const InputDecoration(
-            labelText: '接收方',
-            hintText: '例如：某某公司',
+            labelText: '水印文字',
+            hintText: '例如：仅供某某公司办理入职使用 2026-09-12',
             border: OutlineInputBorder(),
           ),
-          onChanged: (v) =>
-              provider.setTemplateFields(fields.copyWith(receiver: v)),
+          onChanged: widget.onChanged,
         ),
-        const SizedBox(height: 12),
-        TextFormField(
-          initialValue: fields.purpose,
-          decoration: const InputDecoration(
-            labelText: '用途',
-            hintText: '例如：入职',
-            border: OutlineInputBorder(),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _insertToday,
+            icon: const Icon(Icons.calendar_today_outlined, size: 18),
+            label: const Text('插入今天日期'),
           ),
-          onChanged: (v) =>
-              provider.setTemplateFields(fields.copyWith(purpose: v)),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.calendar_today_outlined),
-          label: Text('日期：${TemplateComposer.formatDate(fields.date)}'),
-          onPressed: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: fields.date,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (picked == null) return;
-            provider.setTemplateFields(fields.copyWith(date: picked));
-          },
         ),
       ],
     );
-  }
-}
-
-class _FreeTextInput extends StatelessWidget {
-  const _FreeTextInput({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.read<WatermarkProvider>();
-
-    return TextFormField(
-      initialValue: text,
-      maxLines: 3,
-      decoration: const InputDecoration(
-        labelText: '水印文字',
-        hintText: '例如：仅供某某公司办理入职使用 2026-09-12',
-        border: OutlineInputBorder(),
-      ),
-      onChanged: provider.setFreeText,
-    );
-  }
-}
-
-class _GeneratedPreview extends StatelessWidget {
-  const _GeneratedPreview({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    if (text.isEmpty) return const SizedBox.shrink();
-    return Text('将显示：$text', style: Theme.of(context).textTheme.bodySmall);
   }
 }

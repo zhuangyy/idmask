@@ -5,13 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:gal/gal.dart';
 
 import '../models/recent_photo.dart';
-import '../models/template_fields.dart';
 import '../models/watermark_style.dart';
 import '../services/image_renderer.dart';
 import '../services/photo_saver.dart';
 import '../services/recent_photos_store.dart';
 import '../services/recent_texts_store.dart';
-import '../services/template_composer.dart';
 
 /// 全 App 唯一的状态持有者。
 class WatermarkProvider extends ChangeNotifier {
@@ -21,9 +19,7 @@ class WatermarkProvider extends ChangeNotifier {
   WatermarkProvider({required this.photosStore, required this.textsStore});
 
   WatermarkStyle _style = const WatermarkStyle();
-  String _freeText = '';
-  TemplateFields _templateFields = TemplateFields();
-  bool _useTemplate = true;
+  String _text = '';
   String? _photoPath;
   List<RecentPhoto> _recentPhotos = <RecentPhoto>[];
   List<String> _recentTexts = <String>[];
@@ -32,9 +28,7 @@ class WatermarkProvider extends ChangeNotifier {
   String? _lastWarning;
 
   WatermarkStyle get style => _style;
-  String get freeText => _freeText;
-  TemplateFields get templateFields => _templateFields;
-  bool get useTemplate => _useTemplate;
+  String get text => _text;
   String? get photoPath => _photoPath;
   List<RecentPhoto> get recentPhotos => List<RecentPhoto>.unmodifiable(_recentPhotos);
   List<String> get recentTexts => List<String>.unmodifiable(_recentTexts);
@@ -46,9 +40,8 @@ class WatermarkProvider extends ChangeNotifier {
 
   bool get hasPhoto => _photoPath != null;
 
-  /// 当前真正要画上去的文案。模板模式下由 TemplateComposer 拼出来。
-  String get effectiveText =>
-      _useTemplate ? TemplateComposer.compose(_templateFields) : _freeText.trim();
+  /// 当前真正要画上去的文案：输入内容去掉首尾空白。
+  String get effectiveText => _text.trim();
 
   /// 没选图、文案为空或正在处理中，都不能保存。
   bool get canSave => hasPhoto && effectiveText.isNotEmpty && !_isSaving;
@@ -71,38 +64,17 @@ class WatermarkProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFreeText(String value) {
-    if (value == _freeText) return;
-    _freeText = value;
+  void setText(String value) {
+    if (value == _text) return;
+    _text = value;
     notifyListeners();
   }
 
-  void setTemplateFields(TemplateFields value) {
-    _templateFields = value;
-    notifyListeners();
-  }
-
-  void setUseTemplate(bool value) {
-    if (value == _useTemplate) return;
-    _useTemplate = value;
-    if (!value) {
-      // 切到自由模式时，把当前生成出来的文案填进去作为起点，不丢内容。
-      final composed = TemplateComposer.compose(_templateFields);
-      if (composed.isNotEmpty) _freeText = composed;
-    }
-    notifyListeners();
-  }
-
-  /// 把一条历史文案填回当前模式。
-  ///
-  /// 历史里存的是整句文案（模板拼出来的或自由输入的），没法反解成模板字段，
-  /// 所以一律切到自由模式再填。
+  /// 把一条历史文案填回输入框。
   void applyRecentText(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
-    _useTemplate = false;
-    _freeText = trimmed;
-    notifyListeners();
+    setText(trimmed);
   }
 
   void updateSinglePosition(Offset position) {

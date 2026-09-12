@@ -7,6 +7,7 @@ import 'package:idwm/pages/edit_page.dart';
 import 'package:idwm/providers/watermark_provider.dart';
 import 'package:idwm/services/recent_photos_store.dart';
 import 'package:idwm/services/recent_texts_store.dart';
+import 'package:idwm/widgets/photo_canvas.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,7 +61,7 @@ void main() {
 
   testWidgets('未选图时显示空状态引导', (tester) async {
     await pumpPage(tester);
-    expect(find.text('先从相册选一张证件照'), findsOneWidget);
+    expect(find.text('点击这里，从相册选一张证件照'), findsOneWidget);
   });
 
   testWidgets('文案为空时保存按钮禁用', (tester) async {
@@ -71,57 +72,51 @@ void main() {
 
   testWidgets('未选图时即使填了文案也不能保存', (tester) async {
     await pumpPage(tester);
-    await reveal(tester, find.widgetWithText(TextFormField, '接收方'));
-    await tester.enterText(find.widgetWithText(TextFormField, '接收方'), '某某公司');
+    final field = find.widgetWithText(TextField, '水印文字');
+    await reveal(tester, field);
+    await tester.enterText(field, '仅供某某公司办理入职使用 2026-09-12');
     await tester.pumpAndSettle();
 
-    expect(provider.effectiveText, contains('仅供某某公司使用'));
+    expect(provider.effectiveText, '仅供某某公司办理入职使用 2026-09-12');
 
     await reveal(tester, saveButton);
     expect(tester.widget<FilledButton>(saveButton).onPressed, isNull,
         reason: '没选图不该能保存');
   });
 
-  testWidgets('模板两个字段都填后能拼出完整文案', (tester) async {
-    await pumpPage(tester);
-
-    final receiverField = find.widgetWithText(TextFormField, '接收方');
-    await reveal(tester, receiverField);
-    await tester.enterText(receiverField, '某某公司');
+  testWidgets('点预览区会触发选图回调', (tester) async {
+    var picked = 0;
+    await tester.pumpWidget(
+      ChangeNotifierProvider<WatermarkProvider>.value(
+        value: provider,
+        child: MaterialApp(
+          home: Scaffold(
+            body: PhotoCanvas(onRequestPick: () => picked++),
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    final purposeField = find.widgetWithText(TextFormField, '用途');
-    await reveal(tester, purposeField);
-    await tester.enterText(purposeField, '入职');
+    await tester.tap(find.byType(PhotoCanvas));
     await tester.pumpAndSettle();
 
-    expect(provider.effectiveText,
-        '仅供某某公司办理入职使用 ${_todayFrom(provider)}');
+    expect(picked, 1, reason: '点预览区应当触发一次选图回调');
   });
 
-  testWidgets('切到自由编辑时预填当前文案，切回模板字段还在', (tester) async {
+  testWidgets('插入今天日期会把日期填进文案', (tester) async {
     await pumpPage(tester);
 
-    final receiverField = find.widgetWithText(TextFormField, '接收方');
-    await reveal(tester, receiverField);
-    await tester.enterText(receiverField, '某某公司');
+    final button = find.widgetWithText(TextButton, '插入今天日期');
+    await reveal(tester, button);
+    await tester.tap(button);
     await tester.pumpAndSettle();
 
-    final freeTab = find.text('自由编辑');
-    await reveal(tester, freeTab);
-    await tester.tap(freeTab);
-    await tester.pumpAndSettle();
-
-    expect(provider.useTemplate, isFalse);
-    expect(provider.freeText, contains('仅供某某公司使用'));
-
-    final templateTab = find.text('模板');
-    await reveal(tester, templateTab);
-    await tester.tap(templateTab);
-    await tester.pumpAndSettle();
-
-    expect(provider.useTemplate, isTrue);
-    expect(provider.templateFields.receiver, '某某公司');
+    final now = DateTime.now();
+    final expected = '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    expect(provider.text, contains(expected));
   });
 
   testWidgets('拖动透明度滑块后样式跟着变，且不低于下限', (tester) async {
@@ -153,12 +148,4 @@ void main() {
 
     expect(find.text('还没有用过的照片'), findsOneWidget);
   });
-}
-
-/// 从 provider 当前的模板日期算出应得的 YYYY-MM-DD 后缀。
-String _todayFrom(WatermarkProvider provider) {
-  final d = provider.templateFields.date;
-  return '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }

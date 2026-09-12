@@ -50,10 +50,10 @@ class EditPage extends StatelessWidget {
       body: Column(
         children: <Widget>[
           // 预览区固定高度、不放进滚动容器 —— 这样后面的拖动手势不会和滚动打架。
-          const SizedBox(
+          SizedBox(
             height: 320,
             width: double.infinity,
-            child: PhotoCanvas(),
+            child: PhotoCanvas(onRequestPick: () => _pick(context)),
           ),
           const Divider(height: 1),
           Expanded(
@@ -62,12 +62,6 @@ class EditPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  FilledButton.icon(
-                    onPressed: () => _pick(context),
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('从相册选照片'),
-                  ),
-                  const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => showRecentPhotosSheet(context),
                     icon: const Icon(Icons.history),

@@ -15,15 +15,19 @@ import 'watermark_drag_layer.dart';
 /// 与成品图走的是同一套 `WatermarkLayout.compute` + `WatermarkPainter.paint`，
 /// 因此预览和输出天然一致。
 class PhotoCanvas extends StatelessWidget {
-  const PhotoCanvas({super.key});
+  const PhotoCanvas({super.key, this.onRequestPick});
+
+  /// 用户点预览区时回调，交给外层打开相册；为 null 时不可点。
+  final VoidCallback? onRequestPick;
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<WatermarkProvider>();
     final path = provider.photoPath;
 
+    final Widget content;
     if (path == null) {
-      return const ColoredBox(
+      content = const ColoredBox(
         color: Colors.black12,
         child: Center(
           child: Column(
@@ -31,28 +35,34 @@ class PhotoCanvas extends StatelessWidget {
             children: <Widget>[
               Icon(Icons.add_photo_alternate_outlined, size: 48),
               SizedBox(height: 8),
-              Text('先从相册选一张证件照'),
+              Text('点击这里，从相册选一张证件照'),
             ],
           ),
         ),
       );
-    }
-
-    return WatermarkDragLayer(
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Image.file(File(path), fit: BoxFit.contain, gaplessPlayback: true),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _WatermarkOverlayPainter(
-                text: provider.effectiveText,
-                style: provider.style,
+    } else {
+      content = WatermarkDragLayer(
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Image.file(File(path), fit: BoxFit.contain, gaplessPlayback: true),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _WatermarkOverlayPainter(
+                  text: provider.effectiveText,
+                  style: provider.style,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: provider.isSaving ? null : onRequestPick,
+      child: content,
     );
   }
 }
