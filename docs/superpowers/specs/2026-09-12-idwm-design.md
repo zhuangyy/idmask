@@ -52,7 +52,7 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ## 3. 依赖
 
-已获用户同意安装以下 4 个包。除此之外不引入第三方依赖；水印绘制使用 Flutter 内置的 `dart:ui`，去重指纹用自己写的哈希，缩略图用 `dart:ui` 缩放。
+已获用户同意安装以下依赖。除此之外不引入第三方依赖；水印绘制使用 Flutter 内置的 `dart:ui`，去重指纹用自己写的哈希，缩略图用 `dart:ui` 缩放。`provider` 是第 2 节技术路线选定的状态管理方案。
 
 | 包 | 用途 | 备注 |
 |---|---|---|
@@ -60,6 +60,9 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 | `gal` | 把成品图保存到系统相册 | Android 10+ 免存储权限 |
 | `shared_preferences` | 记住最近文案、最近照片元数据与样式设置 | Flutter 官方插件 |
 | `path_provider` | 取私有目录与临时目录 | Flutter 官方插件 |
+| `provider` | 状态管理（`ChangeNotifier`） | 见第 2 节技术路线 |
+| `path` | 拼接文件路径 | |
+| `cupertino_icons` | `flutter create` 自带，未实际使用 | |
 
 明确不引入：
 
@@ -201,6 +204,7 @@ idwm/
 │   │   ├── image_renderer.dart         # 解码 → 绘制 → 编码 的编排
 │   │   ├── jpeg_encoder.dart           # platform channel 封装
 │   │   ├── photo_saver.dart            # gal 封装
+│   │   ├── backup_excluder.dart        # iOS 上把照片副本目录排除出 iCloud 备份
 │   │   └── recent_texts_store.dart     # 最近文案与样式的持久化
 │   ├── providers/
 │   │   └── watermark_provider.dart     # 唯一的 ChangeNotifier
@@ -221,7 +225,8 @@ idwm/
     ├── services/watermark_layout_test.dart
     ├── services/photo_fingerprint_test.dart
     ├── services/recent_photos_store_test.dart
-    └── services/recent_texts_store_test.dart
+    ├── services/recent_texts_store_test.dart
+    └── pages/edit_page_test.dart
 ```
 
 页面只有两个：主编辑页（选图、输文案、预览、摆位置、保存都在这一页）和设置页。最近照片与最近文案都以底部弹层的形式从主编辑页唤起，不占独立页面。这是一个工具型 App，不套 fitutor 那样的多 Tab 结构。
@@ -492,6 +497,17 @@ Flutter 内置的 `Image.toByteData` 支持的编码格式只有 PNG，没有 JP
 
 Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)`；iOS 侧用 `UIImage(data:)` + `jpegData(compressionQuality:)`。两侧都要在完成后释放位图，并在失败时回传可读的错误。
 
+另有一条平台通道，用于把照片副本目录排除出 iCloud 备份：
+
+- 通道名：`com.xzgg.idwm/storage`
+- 方法：`excludeFromBackup`
+- 入参：`{ "path": String }`
+- 返回：无
+
+这条通道**只有 iOS 侧有实现**：把给定路径（`idwm_photos/` 照片副本目录）标记为 `NSURLIsExcludedFromBackupKey`，从而不参与 iCloud 备份（见第 4.6 节与第 9.2 节）。Android 侧无需实现，调用时按不存在处理。
+
+两条通道的原生实现分别在 `android/app/src/main/kotlin/com/xzgg/idwm/MainActivity.kt` 与 `ios/Runner/AppDelegate.swift`。
+
 ### 8.5 降级策略
 
 平台通道不存在或抛错时（例如未来某平台未实现原生侧），**回退为直接保存 PNG**，功能仍可用，只是文件更大，并提示用户。降级而非失败，因为用户的目的是拿到加了水印的照片。
@@ -526,7 +542,25 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 
 两个权限说明文案都要写清楚用途，不能是占位符 —— 这是 App Store 审核的常见退回点。
 
-另外，创建 `idwm_photos/` 目录时给它设置 `NSURLIsExcludedFromBackupKey`，把证件照副本排除出 iCloud 备份。这是第 4.6 节隐私承诺的一部分，不要漏。
+另外，创建 `idwm_photos/` 目录时给它设置 `NSURLIsExcludedFromBackupKey`，把证件照副本排除出 iCloud 备份。这是第 4.6 节隐私承诺的一部分，不要漏。这一步通过第 8.4 节的 `com.xzgg.idwm/storage` 通道（方法 `excludeFromBackup`）从 Dart 侧触发。
+
+**方法通道的注册方式（UIScene 架构）**
+
+本工程基于 Flutter 3.47.2，`ios/Runner/` 采用的是 **UIScene 架构**：目录下有 `SceneDelegate.swift`，`Info.plist` 里有 `UIApplicationSceneManifest`，`AppDelegate` 的声明是 `class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate`。
+
+在这种架构下，`window?.rootViewController` **拿不到** `FlutterViewController` —— 用这种老写法注册方法通道会**静默失效**（通道建不起来，调用既不返回结果也不报错）。
+
+正确做法是在 `didInitializeImplicitFlutterEngine(_ engineBridge:)` 回调里，用 `engineBridge.applicationRegistrar.messenger()` 作为 binaryMessenger 来注册通道，例如：
+
+```swift
+override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+  let messenger = engineBridge.applicationRegistrar.messenger()
+  FlutterMethodChannel(name: "com.xzgg.idwm/jpeg", binaryMessenger: messenger)
+    .setMethodCallHandler { call, result in /* ... */ }
+}
+```
+
+**不要改回 `window?.rootViewController` 的老写法** —— 它在本工程的 UIScene 架构下取不到控制器，只会让通道静默失效。
 
 ### 9.3 字体
 
