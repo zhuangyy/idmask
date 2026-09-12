@@ -78,17 +78,15 @@ class _PhotoCanvasState extends State<PhotoCanvas> {
 
     final Widget content;
     if (path == null) {
-      content = const ColoredBox(
-        color: Colors.black12,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.add_photo_alternate_outlined, size: 48),
-              SizedBox(height: 8),
-              Text('点击这里，从相册选一张证件照'),
-            ],
-          ),
+      // 空状态不铺底色，直接落在卡片背景上。
+      content = const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.add_photo_alternate_outlined, size: 48),
+            SizedBox(height: 8),
+            Text('点击这里，从相册选一张证件照'),
+          ],
         ),
       );
     } else {
