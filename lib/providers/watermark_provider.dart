@@ -93,6 +93,18 @@ class WatermarkProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 把一条历史文案填回当前模式。
+  ///
+  /// 历史里存的是整句文案（模板拼出来的或自由输入的），没法反解成模板字段，
+  /// 所以一律切到自由模式再填。
+  void applyRecentText(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    _useTemplate = false;
+    _freeText = trimmed;
+    notifyListeners();
+  }
+
   void updateSinglePosition(Offset position) {
     setStyle(_style.copyWith(singlePosition: position));
   }

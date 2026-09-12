@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../providers/watermark_provider.dart';
 import '../widgets/photo_canvas.dart';
+import '../widgets/recent_texts_sheet.dart';
+import '../widgets/style_controls.dart';
+import '../widgets/text_input_section.dart';
 
 class EditPage extends StatelessWidget {
   const EditPage({super.key});
@@ -61,7 +64,20 @@ class EditPage extends StatelessWidget {
                     label: Text('最近照片（${provider.recentPhotos.length}）'),
                   ),
                   const SizedBox(height: 16),
-                  // 后续任务往这里插输入区、样式控件与保存按钮
+                  const TextInputSection(),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => showRecentTextsSheet(context),
+                      icon: const Icon(Icons.history),
+                      label: Text('最近文案（${provider.recentTexts.length}）'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  const StyleControls(),
                 ],
               ),
             ),
