@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/watermark_provider.dart';
 import '../widgets/photo_canvas.dart';
+import '../widgets/recent_photos_sheet.dart';
 import '../widgets/recent_texts_sheet.dart';
 import '../widgets/style_controls.dart';
 import '../widgets/text_input_section.dart';
@@ -16,10 +17,6 @@ class EditPage extends StatelessWidget {
     if (picked == null) return; // 用户取消，静默返回
     if (!context.mounted) return;
     await context.read<WatermarkProvider>().pickPhoto(picked.path);
-  }
-
-  void _showRecentPhotos() {
-    // 后续任务实现最近照片面板
   }
 
   @override
@@ -59,7 +56,7 @@ class EditPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
-                    onPressed: _showRecentPhotos,
+                    onPressed: () => showRecentPhotosSheet(context),
                     icon: const Icon(Icons.history),
                     label: Text('最近照片（${provider.recentPhotos.length}）'),
                   ),
