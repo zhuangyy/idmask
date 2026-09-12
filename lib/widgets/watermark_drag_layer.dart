@@ -77,6 +77,10 @@ class _GuideLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 平铺模式的 guidePosition 可以超出 0–1（tileOffset 允许 ±0.75），
+    // 不裁剪就会画到照片外面；Stack 的裁剪拦不住 CustomPaint 的溢绘。
+    canvas.clipRect(Offset.zero & size);
+
     final paint = Paint()
       ..color = color.withValues(alpha: 0.7)
       ..strokeWidth = 1;
