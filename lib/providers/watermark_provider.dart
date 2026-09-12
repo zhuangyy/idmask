@@ -65,10 +65,17 @@ class WatermarkProvider extends ChangeNotifier {
   }
 
   void setText(String value) {
-    if (value == _text) return;
-    _text = value;
+    final normalized = _collapseNewlines(value);
+    if (normalized == _text) return;
+    _text = normalized;
     notifyListeners();
   }
+
+  static final RegExp _newlinePattern = RegExp(r'[\r\n]+');
+
+  /// 水印只画单行，换行统一折成空格。
+  static String _collapseNewlines(String value) =>
+      value.replaceAll(_newlinePattern, ' ');
 
   /// 把一条历史文案填回输入框。
   void applyRecentText(String text) {

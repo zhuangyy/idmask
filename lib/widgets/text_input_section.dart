@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/watermark_provider.dart';
@@ -94,6 +95,9 @@ class _TextInputState extends State<_TextInput> {
           controller: _controller,
           focusNode: _focusNode,
           maxLines: 3,
+          inputFormatters: <TextInputFormatter>[
+            _CollapseNewlinesFormatter(),
+          ],
           decoration: const InputDecoration(
             labelText: '水印文字',
             hintText: '例如：仅供某某公司办理入职使用 2026-09-12',
@@ -117,6 +121,30 @@ class _TextInputState extends State<_TextInput> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// 把换行折叠成空格：水印只画单行，输入框里不该出现换行符。
+///
+/// 直接删掉会让粘贴进来的多行文本首尾粘连，所以折叠成空格。
+class _CollapseNewlinesFormatter extends TextInputFormatter {
+  static final RegExp _newlines = RegExp(r'[\r\n]+');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (!_newlines.hasMatch(newValue.text)) return newValue;
+
+    final collapsed = newValue.text.replaceAll(_newlines, ' ');
+    final removed = newValue.text.length - collapsed.length;
+    final offset =
+        (newValue.selection.baseOffset - removed).clamp(0, collapsed.length);
+    return TextEditingValue(
+      text: collapsed,
+      selection: TextSelection.collapsed(offset: offset),
     );
   }
 }

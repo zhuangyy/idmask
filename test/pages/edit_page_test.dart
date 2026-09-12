@@ -84,6 +84,18 @@ void main() {
         reason: '没选图不该能保存');
   });
 
+  testWidgets('输入框不接受换行，换行会被折成空格', (tester) async {
+    await pumpPage(tester);
+
+    final field = find.widgetWithText(TextField, '水印文字');
+    await reveal(tester, field);
+    await tester.enterText(field, '仅供某某公司\n办理入职使用');
+    await tester.pumpAndSettle();
+
+    expect(provider.text, '仅供某某公司 办理入职使用');
+    expect(provider.text.contains('\n'), isFalse);
+  });
+
   testWidgets('点预览区会触发选图回调', (tester) async {
     var picked = 0;
     await tester.pumpWidget(
