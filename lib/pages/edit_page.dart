@@ -37,16 +37,7 @@ class EditPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('证件水印'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: '设置',
-            onPressed: () => Navigator.of(context).pushNamed('/settings'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('证件水印')),
       body: Column(
         children: <Widget>[
           // 预览区固定高度、不放进滚动容器 —— 这样后面的拖动手势不会和滚动打架。
@@ -62,22 +53,28 @@ class EditPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  OutlinedButton.icon(
-                    onPressed: () => showRecentPhotosSheet(context),
-                    icon: const Icon(Icons.history),
-                    label: Text('最近照片（${provider.recentPhotos.length}）'),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => showRecentPhotosSheet(context),
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label:
+                              Text('最近照片（${provider.recentPhotos.length}）'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => showRecentTextsSheet(context),
+                          icon: const Icon(Icons.history),
+                          label: Text('最近文案（${provider.recentTexts.length}）'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   const TextInputSection(),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => showRecentTextsSheet(context),
-                      icon: const Icon(Icons.history),
-                      label: Text('最近文案（${provider.recentTexts.length}）'),
-                    ),
-                  ),
                   const SizedBox(height: 8),
                   const Divider(),
                   const SizedBox(height: 8),

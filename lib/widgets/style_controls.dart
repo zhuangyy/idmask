@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/watermark_style.dart';
 import '../providers/watermark_provider.dart';
 
-/// 透明度、字号、颜色三项。版式在设置页，位置靠拖动。
+/// 版式、透明度、字号、颜色四项。位置靠拖动。
 class StyleControls extends StatelessWidget {
   const StyleControls({super.key});
 
@@ -16,6 +16,24 @@ class StyleControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text('版式', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 6),
+        SegmentedButton<WatermarkLayoutMode>(
+          segments: const <ButtonSegment<WatermarkLayoutMode>>[
+            ButtonSegment<WatermarkLayoutMode>(
+              value: WatermarkLayoutMode.tile,
+              label: Text('平铺满画面'),
+            ),
+            ButtonSegment<WatermarkLayoutMode>(
+              value: WatermarkLayoutMode.single,
+              label: Text('单块'),
+            ),
+          ],
+          selected: <WatermarkLayoutMode>{style.mode},
+          onSelectionChanged: (selection) =>
+              provider.setStyle(style.copyWith(mode: selection.first)),
+        ),
+        const SizedBox(height: 16),
         Text('透明度 ${(style.opacity * 100).round()}%',
             style: Theme.of(context).textTheme.labelLarge),
         Slider(

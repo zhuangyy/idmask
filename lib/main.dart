@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'pages/edit_page.dart';
-import 'pages/settings_page.dart';
 import 'providers/watermark_provider.dart';
 import 'services/backup_excluder.dart';
 import 'services/recent_photos_store.dart';
@@ -53,10 +52,7 @@ class IdwmApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF1E6FD9),
         useMaterial3: true,
       ),
-      routes: <String, WidgetBuilder>{
-        '/': (_) => const EditPage(),
-        '/settings': (_) => const SettingsPage(),
-      },
+      home: const EditPage(),
     );
   }
 }
