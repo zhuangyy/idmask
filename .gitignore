@@ -52,3 +52,6 @@ build/
 .dart_tool/
 .flutter-plugins-dependencies
 *.iml
+
+# Reasonix 本地会话状态（不纳入版本控制）
+.reasonix/tasks/
