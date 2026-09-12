@@ -197,6 +197,7 @@ idwm/
 │   │   ├── watermark_painter.dart      # 按 items 绘制到 Canvas（预览与输出共用）
 │   │   ├── photo_fingerprint.dart      # 文件内容指纹，用于去重（纯函数）
 │   │   ├── recent_photos_store.dart    # 照片副本 + 缩略图 + 元数据的增删查
+│   │   ├── thumbnail_generator.dart    # 用 dart:ui 把图缩到指定长边
 │   │   ├── image_renderer.dart         # 解码 → 绘制 → 编码 的编排
 │   │   ├── jpeg_encoder.dart           # platform channel 封装
 │   │   ├── photo_saver.dart            # gal 封装
@@ -233,7 +234,8 @@ idwm/
 | `WatermarkLayout` | 画布尺寸 + 文案 + 样式 → 绘制指令列表 | 注入的文字测量器 | `compute(...)` 纯函数 |
 | `WatermarkPainter` | 把绘制指令画到任意 `Canvas` 上 | `dart:ui` | 预览与输出调同一个函数 |
 | `PhotoFingerprint` | 由文件字节算出用于去重的指纹 | 无 | `of(bytes)` 纯函数 |
-| `RecentPhotosStore` | 照片副本与缩略图的增删查、容量淘汰、孤儿清理 | 注入的根目录 + `shared_preferences` | `load()` / `add(path)` / `remove(id)` / `clear()` |
+| `ThumbnailGenerator` | 把源图等比缩到指定长边并写成 PNG | `dart:ui` | 注入给 `RecentPhotosStore` |
+| `RecentPhotosStore` | 照片副本与缩略图的增删查、容量淘汰、孤儿清理 | 注入的根目录 + `shared_preferences` + `ThumbnailGenerator` | `load()` / `add(path)` / `remove(id)` / `clear()` |
 | `ImageRenderer` | 组织整条管线：读文件 → 解码 → 画 → 编码 JPEG → 写临时文件 | 上面几个 + `JpegEncoder` | `render(request)` 返回成品文件路径 |
 | `JpegEncoder` | PNG 字节 → JPEG 字节 | platform channel | `encode(png, quality)` |
 | `PhotoSaver` | 成品文件 → 系统相册 | `gal` | `save(path)` |
@@ -243,7 +245,7 @@ idwm/
 
 `WatermarkDragLayer` 只负责「让用户摆水印」，不负责画水印本身 —— 水印仍由 `photo_canvas` 按 `WatermarkLayout` 的结果绘制。拖动改的只是 `WatermarkStyle.singlePosition` 这一个值，预览自然跟着重绘。
 
-`RecentPhotosStore` 的根目录是**构造时注入**的，不是内部去调 `path_provider`。这样单元测试传一个临时目录就能完整覆盖复制、淘汰、删除、孤儿清理，不需要 mock 插件。
+`RecentPhotosStore` 的根目录与缩略图生成器都是**构造时注入**的，store 内部不去调 `path_provider`，也不直接调 `dart:ui`。这样单元测试传一个临时目录加一个写假文件的假生成器，就能完整覆盖复制、淘汰、删除、孤儿清理，不需要 mock 插件，也不需要真实的图片解码。
 
 ### 5.3 数据流
 
@@ -297,8 +299,9 @@ class WatermarkItem {
 
 /// 最近照片的元数据（图片文件本身在私有目录里，这里只记索引信息）
 class RecentPhoto {
-  final String id;         // 副本文件名（不含扩展名），同时是列表键
-  final DateTime addedAt;  // 加入时间，用于排序与展示
+  final String id;           // 副本文件名（含扩展名），同时是列表键
+  final String fingerprint;  // 内容指纹，用于去重（见 6.1）
+  final DateTime addedAt;    // 加入时间，用于排序与展示
 }
 
 /// 模板字段
@@ -327,12 +330,14 @@ class TemplateFields {
 
 用自己写的 FNV-1a 而不是 `crypto` 包的 SHA-256，是因为不值得为这个用途多引入一个依赖。算法是纯函数，可单独测试。
 
+指纹**存进 `RecentPhoto` 元数据**，不是现算现比。否则每次选图都要把已有 10 张副本全读一遍来重算指纹。
+
 ### 6.2 存储布局
 
 ```
 <ApplicationSupportDirectory>/idwm_photos/
-├── <id>.jpg              # 原图副本，id 形如 1757654321000_a1b2c3
-└── thumbs/<id>.png       # 缩略图，长边 240 px
+├── <id>              # 原图副本，id 即文件名，形如 1757654321000.jpg
+└── thumbs/<id>.png   # 缩略图，长边 240 px
 ```
 
 `shared_preferences` 里的键：
@@ -343,7 +348,13 @@ class TemplateFields {
 | `recent_texts` | 最近文案数组的 JSON |
 | `watermark_style` | `WatermarkStyle` 的 JSON |
 
-副本一律存成 `.jpg`。若源图是 PNG 或其它格式，解码后统一按 JPEG 写入（复用 `JpegEncoder`）；平台通道不可用时按 8.5 的降级路径写成 PNG，扩展名随之改为 `.png`，读取时以元数据里的 id 为准、按实际存在的文件后缀查找。
+副本**直接复制源文件的字节**，不改格式、不重新编码：
+
+- 保留原始画质。若转成 JPEG 再存，用户下次在这份副本上加水印，就等于多做了一次有损编码
+- 不依赖第 8 节的 JPEG 平台通道，所以「最近照片」可以独立于渲染管线先做完
+- 源文件是 jpg / png / heic，副本就是什么格式；`id` 里带着原扩展名，读取时按 `id` 直接拼路径，不需要额外记格式
+
+`id` 的形如 `1757654321000.jpg` —— 毫秒时间戳加源文件扩展名。同一毫秒内不可能选两次图，所以不需要额外的唯一性保证。
 
 ## 7. 水印布局算法
 
@@ -485,7 +496,7 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 
 平台通道不存在或抛错时（例如未来某平台未实现原生侧），**回退为直接保存 PNG**，功能仍可用，只是文件更大，并提示用户。降级而非失败，因为用户的目的是拿到加了水印的照片。
 
-这条降级路径同时被第 6.2 节的照片副本写入复用：通道不可用时副本也写成 PNG，扩展名随之改变。
+这条降级只管成品图的输出。第 6.2 节的照片副本走的是另一条路（直接复制源字节），不受平台通道影响。
 
 ## 9. 权限与平台配置
 
@@ -551,14 +562,14 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 | `WatermarkLayout` 平铺 | 注入假测量器。断言：指令条数 > 0；所有指令 rotation 等于 −30°；字号等于短边 × 比例；超宽图与超窄图不产生空区间；空文案返回空列表 |
 | `WatermarkLayout` 单块 | 位置 (0.5, 0.5) 时居中；位置 (0, 0) 与 (1, 1) 时文字仍完整落在画布内（即夹取生效）；文字宽高超过画布时该方向居中；同一归一化位置在两种画布尺寸下产生等比的结果 |
 | `WatermarkStyle` | JSON 往返序列化；`singlePosition` 越界时被夹到 0–1；非法值（透明度越界、比例越界）被夹到合法区间 |
-| `RecentPhoto` | JSON 往返序列化 |
+| `RecentPhoto` | JSON 往返序列化，含 `fingerprint` |
 | `PhotoFingerprint` | 同样的字节得到同样的指纹；改动中间任意一段都会改变指纹；不同长度的文件指纹不同；空字节与超短文件不崩 |
-| `RecentPhotosStore` | **注入临时目录**。复制后副本文件确实存在；重复 add 同一内容只留一条；第 11 条加入时最旧的记录与**它的文件**都被删掉；`remove(id)` 同时删副本与缩略图；`clear()` 后目录里除空目录外无残留；`pruneOrphans()` 清掉元数据里没有的文件；缩略图长边为 240 |
+| `RecentPhotosStore` | **注入临时目录与假缩略图生成器**。复制后副本文件确实存在且字节与源文件一致；重复 add 同一内容只留一条；第 11 条加入时最旧的记录与**它的文件**都被删掉；`remove(id)` 同时删副本与缩略图；`clear()` 后目录里除空目录外无残留；`pruneOrphans()` 清掉元数据里没有的文件 |
 | `RecentTextsStore` | 用 `SharedPreferences.setMockInitialValues` 注入；超出 10 条时淘汰最旧；去重；样式读写往返 |
 
 布局算法不依赖真图，是本项目测试覆盖的重点，也是它被设计成纯函数的直接收益。「同一归一化位置在不同画布尺寸下等比」这条尤其重要 —— 它守的是预览与成品一致这件用户能直接看见的事。
 
-`RecentPhotosStore` 的测试全部落在真实文件系统上（临时目录里真的写文件、真的删文件），这样断言的是「文件确实没了」而不是「调用过删除方法」。注入根目录的设计就是为了让这个成为可能。
+`RecentPhotosStore` 的测试全部落在真实文件系统上（临时目录里真的写文件、真的删文件），这样断言的是「文件确实没了」而不是「调用过删除方法」。根目录与缩略图生成器都靠注入的设计，就是为了让这个成为可能。
 
 ### 11.2 Widget 测试
 
@@ -596,6 +607,7 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - 平铺模式的位置与角度不可调
 - 最近照片是 App 私有的，不会出现在系统相册里；想在系统相册复用仍需走相册选择
 - 最近照片按内容去重只对比抽样指纹，理论上存在极小概率的误判（见 12 节风险表）
+- 最近照片的副本按原格式保留。若源图是 HEIC，副本也是 HEIC，其解码依赖系统解码器（iOS 原生支持，Android 视机型而定）
 
 ### 12.2 手测清单
 
