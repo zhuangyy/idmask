@@ -139,6 +139,9 @@ class _WatermarkOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 平铺算法会刻意生成超出画布边界的指令（设计上交给裁剪丢弃），
+    // 所以这里必须显式裁剪，否则它们会画到预览区之外去。
+    canvas.clipRect(Offset.zero & size);
     final items = WatermarkLayout.compute(
       canvasSize: size,
       text: text,
