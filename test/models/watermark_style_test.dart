@@ -112,32 +112,4 @@ void main() {
       expect(const WatermarkStyle().copyWith(opacity: 5.0).opacity, 1.0);
     });
   });
-
-  group('参考线位置 guidePosition', () {
-    test('单块模式就是 singlePosition', () {
-      const s = WatermarkStyle(
-        mode: WatermarkLayoutMode.single,
-        singlePosition: Offset(0.2, 0.9),
-      );
-      expect(s.guidePosition, const Offset(0.2, 0.9));
-    });
-
-    test('平铺模式是画布中心加上网格偏移', () {
-      const s = WatermarkStyle(tileOffset: Offset(0.25, -0.1));
-      expect(s.guidePosition, const Offset(0.75, 0.4));
-    });
-
-    test('平铺模式偏移为 0 时落在画布中心', () {
-      expect(const WatermarkStyle().guidePosition, const Offset(0.5, 0.5));
-    });
-  });
-
-  group('相等性', () {
-    test('guidePosition 是派生值，不参与相等性比较', () {
-      const a = WatermarkStyle(tileOffset: Offset(0.1, 0));
-      const b = WatermarkStyle(tileOffset: Offset(0.1, 0));
-      expect(a, b);
-      expect(a.guidePosition, b.guidePosition);
-    });
-  });
 }

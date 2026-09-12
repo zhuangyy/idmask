@@ -54,7 +54,6 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
                   child: IgnorePointer(
                     child: CustomPaint(
                       painter: _GuideLinePainter(
-                        position: provider.style.guidePosition,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
@@ -68,31 +67,28 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
   }
 }
 
-/// 穿过水印中心的十字参考线。只画在预览层，不会进成品图。
+/// 穿过照片正中的十字参考线。只画在预览层，不会进成品图。
 class _GuideLinePainter extends CustomPainter {
-  _GuideLinePainter({required this.position, required this.color});
+  const _GuideLinePainter({required this.color});
 
-  final Offset position; // 归一化
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 平铺模式的 guidePosition 可以超出 0–1（tileOffset 允许 ±0.75），
-    // 不裁剪就会画到照片外面；Stack 的裁剪拦不住 CustomPaint 的溢绘。
+    // 保留裁剪，与项目里其它 CustomPainter 保持一致。
     canvas.clipRect(Offset.zero & size);
 
     final paint = Paint()
       ..color = color.withValues(alpha: 0.7)
       ..strokeWidth = 1;
 
-    final x = position.dx * size.width;
-    final y = position.dy * size.height;
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
 
-    canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    canvas.drawLine(Offset(centerX, 0), Offset(centerX, size.height), paint);
+    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), paint);
   }
 
   @override
-  bool shouldRepaint(_GuideLinePainter old) =>
-      old.position != position || old.color != color;
+  bool shouldRepaint(_GuideLinePainter old) => old.color != color;
 }
