@@ -109,6 +109,26 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 真机相关的事靠手测：相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感、
 iCloud 备份排除是否生效。清单见设计文档第 12.2 节。
 
+## 在模拟器上做自动化验证
+
+用 `adb` 驱动界面验证时，有三条容易踩的坑：
+
+- **拖动要用 `input motionevent`，不能用 `input swipe`。** `input swipe` 产生的 `DragUpdateDetails.delta` 恒为 0，Flutter 侧的状态不会被推动，看起来像「拖动没生效」。要逐条注入 DOWN / MOVE / UP：
+
+  ```bash
+  adb shell input motionevent DOWN 400 600
+  sleep 0.3
+  adb shell input motionevent MOVE 460 600
+  sleep 0.3
+  adb shell input motionevent MOVE 520 600
+  sleep 0.3
+  adb shell input motionevent UP 520 600
+  ```
+
+- **`Offset.toString()` 有精度损失。** 它内部用 `toStringAsFixed(1)`，所以 `Offset(0.25, 0)` 会打印成 `Offset(0.3, 0)`。靠日志判断数值时别被它骗了，必要时直接打印 `dx` / `dy` 分量。
+
+- **别拿自带水印的成品图当验证素材。** 照片内容里的水印会和刚渲染的水印叠在一起，看不出差异，容易误判成「修复没生效」。先用一张干净图片。
+
 ## 设计文档
 
 `docs/superpowers/specs/2026-09-12-idwm-design.md` 是唯一事实来源，改动行为前先读它。
