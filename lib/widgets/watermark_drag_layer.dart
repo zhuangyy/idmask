@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/watermark_style.dart';
 import '../providers/watermark_provider.dart';
 
 /// 叠在预览上的手势层：拖动水印，并在单块模式拖动期间画十字参考线。
@@ -50,12 +49,12 @@ class _WatermarkDragLayerState extends State<WatermarkDragLayer> {
             fit: StackFit.expand,
             children: <Widget>[
               widget.child,
-              if (_dragging && enabled && provider.style.mode == WatermarkLayoutMode.single)
+              if (_dragging && enabled)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: CustomPaint(
                       painter: _GuideLinePainter(
-                        position: provider.style.singlePosition,
+                        position: provider.style.guidePosition,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),

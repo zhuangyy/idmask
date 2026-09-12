@@ -81,6 +81,13 @@ class WatermarkStyle {
         o.dy.clamp(-maxTileOffset, maxTileOffset),
       );
 
+  /// 拖动参考线穿过的归一化位置。
+  ///
+  /// 单块模式是文字块的中心；平铺模式是网格的中心（即相对画布中心偏移了多少）。
+  Offset get guidePosition => mode == WatermarkLayoutMode.single
+      ? singlePosition
+      : Offset(0.5 + tileOffset.dx, 0.5 + tileOffset.dy);
+
   WatermarkStyle copyWith({
     WatermarkLayoutMode? mode,
     Offset? singlePosition,
