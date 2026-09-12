@@ -8,6 +8,7 @@ import '../providers/watermark_provider.dart';
 import '../services/text_painter_measurer.dart';
 import '../services/watermark_layout.dart';
 import '../services/watermark_painter.dart';
+import 'watermark_drag_layer.dart';
 
 /// 实时预览。
 ///
@@ -37,19 +38,21 @@ class PhotoCanvas extends StatelessWidget {
       );
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        Image.file(File(path), fit: BoxFit.contain, gaplessPlayback: true),
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _WatermarkOverlayPainter(
-              text: provider.effectiveText,
-              style: provider.style,
+    return WatermarkDragLayer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          Image.file(File(path), fit: BoxFit.contain, gaplessPlayback: true),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _WatermarkOverlayPainter(
+                text: provider.effectiveText,
+                style: provider.style,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
