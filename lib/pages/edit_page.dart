@@ -9,7 +9,10 @@ import '../widgets/style_controls.dart';
 import '../widgets/text_input_section.dart';
 
 class EditPage extends StatelessWidget {
-  const EditPage({super.key});
+  const EditPage({super.key, required this.version});
+
+  /// App 版本号，以小字显示在标题后面。
+  final String version;
 
   Future<void> _pick(BuildContext context) async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -37,7 +40,21 @@ class EditPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('证件水印'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            const Text('证件水印'),
+            const SizedBox(width: 6),
+            Text(
+              'v$version',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
         actions: <Widget>[
           TextButton.icon(
             onPressed: () => showRecentPhotosSheet(context),

@@ -95,7 +95,9 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 
 ## 依赖约束
 
-只允许：`image_picker`、`gal`、`shared_preferences`、`path_provider`、`path`、`provider`、`cupertino_icons`。
+只允许：`image_picker`、`gal`、`shared_preferences`、`path_provider`、`path`、`provider`、`package_info_plus`、`cupertino_icons`。
+
+其中 `package_info_plus` 读取 App 版本号，显示在标题栏。
 
 **不要引入**：`image`（JPEG 编码已有平台通道）、`sqflite`（键值存储已够）、
 `permission_handler`（权限被拒时只提示，不做深链跳转）、`crypto`（去重指纹用自写的 FNV-1a）。

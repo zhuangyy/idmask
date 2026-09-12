@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,8 @@ import 'services/thumbnail_generator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final packageInfo = await PackageInfo.fromPlatform();
 
   final prefs = await SharedPreferences.getInstance();
   final supportDir = await getApplicationSupportDirectory();
@@ -36,13 +39,16 @@ Future<void> main() async {
   runApp(
     ChangeNotifierProvider<WatermarkProvider>.value(
       value: provider,
-      child: const IdwmApp(),
+      child: IdwmApp(version: packageInfo.version),
     ),
   );
 }
 
 class IdwmApp extends StatelessWidget {
-  const IdwmApp({super.key});
+  const IdwmApp({super.key, required this.version});
+
+  /// App 版本号，显示在标题栏。
+  final String version;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,7 @@ class IdwmApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF1E6FD9),
         useMaterial3: true,
       ),
-      home: const EditPage(),
+      home: EditPage(version: version),
     );
   }
 }

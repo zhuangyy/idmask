@@ -40,7 +40,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<WatermarkProvider>.value(
         value: provider,
-        child: const MaterialApp(home: EditPage()),
+        child: MaterialApp(home: EditPage(version: '1.1.0')),
       ),
     );
     await tester.pumpAndSettle();
@@ -173,5 +173,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('还没有用过的文案'), findsOneWidget);
+  });
+
+  testWidgets('标题栏显示 App 名与版本号', (tester) async {
+    await pumpPage(tester);
+    expect(find.text('证件水印'), findsOneWidget);
+    expect(find.text('v1.1.0'), findsOneWidget);
   });
 }
