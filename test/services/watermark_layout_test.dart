@@ -91,31 +91,43 @@ void main() {
 
     test('偏移会把整个网格整体平移，指令条数不变', () {
       const canvas = Size(1200, 900);
-      const shift = Offset(0.2, -0.1);
+      const offset = Offset(0.2, -0.1);
       final base = compute(canvasSize: canvas, style: const WatermarkStyle());
       final moved = compute(
         canvasSize: canvas,
-        style: const WatermarkStyle(tileOffset: shift),
+        style: const WatermarkStyle(tileOffset: offset),
+      );
+
+      // 期望位移 = offset × (画布边长 + 旋转后真实跨度) / 2
+      // 真实跨度 = extentX·|cos30°| + extentY·|sin30°|（旋转后沿单轴的实际范围）
+      const theta = math.pi / 6;
+      final extentX = canvas.width * math.cos(theta).abs() + canvas.height * math.sin(theta).abs();
+      final extentY = canvas.width * math.sin(theta).abs() + canvas.height * math.cos(theta).abs();
+      final spanX = extentX * math.cos(theta).abs() + extentY * math.sin(theta).abs();
+      final spanY = extentX * math.sin(theta).abs() + extentY * math.cos(theta).abs();
+      final shift = Offset(
+        offset.dx * (canvas.width + spanX) / 2,
+        offset.dy * (canvas.height + spanY) / 2,
       );
 
       expect(moved.length, base.length);
       for (var i = 0; i < base.length; i++) {
-        expect(moved[i].center.dx, closeTo(base[i].center.dx + shift.dx * 1200, 1e-6));
-        expect(moved[i].center.dy, closeTo(base[i].center.dy + shift.dy * 900, 1e-6));
+        expect(moved[i].center.dx, closeTo(base[i].center.dx + shift.dx, 1e-6));
+        expect(moved[i].center.dy, closeTo(base[i].center.dy + shift.dy, 1e-6));
       }
     });
 
     test('偏移足够大时，画布左侧出现完全没有水印的竖条', () {
       const canvas = Size(1200, 900);
-      // 把网格整体往右推 0.25 张
+      // 把网格整体往右推 0.75 张
       final items = compute(
         canvasSize: canvas,
-        style: const WatermarkStyle(tileOffset: Offset(0.25, 0)),
+        style: const WatermarkStyle(tileOffset: Offset(0.75, 0)),
       );
       // 画布内的最左边缘一带应当没有任何文字中心落在这里。
       // （画布外的中心会被裁剪丢弃，所以只检查 0 <= x < 阈值 的区间。）
-      // 阈值 0.03 张：实测偏移 0.25 张后，画布内最左文字中心在 x≈56.08（约 0.047 张），
-      // 0.03 张（36px）落在「左侧空白」区间 [0, 56.08) 内，两侧各留约 20px 余量，
+      // 阈值 0.03 张：实测偏移 0.75 张后，画布内最左文字中心在 x≈802.57（约 0.669 张），
+      // 0.03 张（36px）远落在「左侧空白」区间 [0, 802.57) 内，留出充足余量，
       // 对布局算法的微调最不敏感。
       final nearLeftEdge = items.where(
           (i) => i.center.dx >= 0 && i.center.dx < 1200 * 0.03);
@@ -138,8 +150,8 @@ void main() {
 
       final minX = inCanvas.map((i) => i.center.dx).reduce((a, b) => a < b ? a : b);
       // 左侧这一整段都应当是没有水印的
-      expect(minX / canvas.width, greaterThan(0.4),
-          reason: '偏移 0.75 张后左侧至少应空出 40% 宽度，实测 ${minX / canvas.width}');
+      expect(minX / canvas.width, greaterThan(0.6),
+          reason: '偏移 0.75 张后左侧至少应空出 60% 宽度，实测 ${minX / canvas.width}');
     });
   });
 

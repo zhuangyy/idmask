@@ -76,10 +76,19 @@ class WatermarkLayout {
     final centerX = canvasSize.width / 2;
     final centerY = canvasSize.height / 2;
 
-    // 平铺网格的整体偏移：拖出多少就露出多少没有水印的区域。
+    // 平铺网格的整体偏移。
+    //
+    // 系数取「网格刚好完全移出画布所需的位移」。网格旋转 30° 后沿每个轴的
+    // 真实跨度是 spanX / spanY —— 比 extentX / extentY 更大，因为 extent
+    // 只是两个方向的独立投影，旋转后沿单轴的实际范围要把两者叠加起来。
+    // 若按画布边长缩放，网格旋转留下的这段余量会先吃掉一大半位移，
+    // 实际露出的空白远小于 offset 的预期。这样 offset = 0 是铺满、
+    // = 1 是完全移出（100% 空白），中间近似成正比。
+    final spanX = extentX * cosT.abs() + extentY * sinT.abs();
+    final spanY = extentX * sinT.abs() + extentY * cosT.abs();
     final shift = Offset(
-      style.tileOffset.dx * canvasSize.width,
-      style.tileOffset.dy * canvasSize.height,
+      style.tileOffset.dx * (canvasSize.width + spanX) / 2,
+      style.tileOffset.dy * (canvasSize.height + spanY) / 2,
     );
 
     final rowCount = (extentY / lineHeight).ceil() + 1;
