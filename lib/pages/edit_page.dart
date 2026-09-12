@@ -23,6 +23,19 @@ class EditPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<WatermarkProvider>();
 
+    // 一次性消息提示：message 非空时在下一帧弹 SnackBar，并顺带带上警告文本。
+    final message = provider.message;
+    if (message != null) {
+      final warning = provider.lastWarning;
+      final text = warning == null ? message : '$message（$warning）';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(text)));
+        context.read<WatermarkProvider>().clearMessage();
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('证件水印'),
@@ -75,6 +88,20 @@ class EditPage extends StatelessWidget {
                   const Divider(),
                   const SizedBox(height: 8),
                   const StyleControls(),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: provider.canSave
+                        ? () => context.read<WatermarkProvider>().save()
+                        : null,
+                    icon: provider.isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_alt),
+                    label: Text(provider.isSaving ? '处理中…' : '保存到相册'),
+                  ),
                 ],
               ),
             ),
