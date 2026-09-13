@@ -1,11 +1,11 @@
-# 证件水印（idwm）设计
+# 证件水印（idmask）设计
 
 - 日期：2026-09-12
 - 状态：待评审
 
 ## 1. 概述
 
-证件水印（idwm）是一个手机 App，用于在证件照片上加文字水印，目的是防止证件照片被挪用于约定用途之外的场合。
+证件水印（idmask）是一个手机 App，用于在证件照片上加文字水印，目的是防止证件照片被挪用于约定用途之外的场合。
 
 典型场景：用户要在线上提交身份证、学历证、户口本等证件的照片，希望在照片上叠一句「仅供某某公司办理入职使用 2026-09-12」，让这张照片即使外流也无法被当作无标注的原件使用。
 
@@ -33,9 +33,9 @@
 | 框架 | Flutter 3.47.2 stable |
 | 语言 | Dart |
 | 平台 | Android + iOS |
-| 包名 / Bundle ID | `com.xzgg.idwm` |
+| 包名 / Bundle ID | `com.xzgg.idmask` |
 | 应用显示名 | 证件水印 |
-| Dart 包名 | `idwm` |
+| Dart 包名 | `idmask` |
 | 状态管理 | `provider`（ChangeNotifier） |
 | 架构分层 | `UI(pages/widgets) → State(Provider) → Services → Data` |
 | 网络 | 无。100% 离线，App 自身不发起任何网络请求 |
@@ -159,11 +159,11 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 **存储位置与隐私**
 
-- 副本放在 App 私有目录（`getApplicationSupportDirectory()` 下的 `idwm_photos/`）。这个目录其他 App 读不到，用户也不能通过文件管理器翻到
+- 副本放在 App 私有目录（`getApplicationSupportDirectory()` 下的 `idmask_photos/`）。这个目录其他 App 读不到，用户也不能通过文件管理器翻到
 - 卸载 App 时，副本随沙盒一并删除
 - **iOS 上把该目录标记为不参与 iCloud 备份**（`NSURLIsExcludedFromBackupKey`），避免证件照副本被同步到 iCloud 之外的地方
 - App 全程不联网，副本不会离开这台手机
-- 缩略图另存于 `idwm_photos/thumbs/`，长边 240 px，用于列表展示，避免加载列表时把 10 张原图全解码
+- 缩略图另存于 `idmask_photos/thumbs/`，长边 240 px，用于列表展示，避免加载列表时把 10 张原图全解码
 - App 启动时清理一次孤儿文件（目录里有、元数据里没有的），防止异常退出留下无主副本
 
 ### 4.7 保存行为
@@ -177,14 +177,14 @@ ALL_PROXY=socks5://127.0.0.1:7890 HTTPS_PROXY=socks5://127.0.0.1:7890 HTTP_PROXY
 
 ### 5.1 目录结构
 
-Flutter 工程直接位于仓库根 `idwm/`：
+Flutter 工程直接位于仓库根 `idmask/`：
 
 ```
-idwm/
+idmask/
 ├── CLAUDE.md
 ├── reasonix.toml
 ├── .gitignore
-├── docs/superpowers/specs/2026-09-12-idwm-design.md
+├── docs/superpowers/specs/2026-09-12-idmask-design.md
 ├── pubspec.yaml
 ├── android/                      # flutter create 生成，改动见第 9 节
 ├── ios/                          # flutter create 生成，改动见第 9 节
@@ -330,7 +330,7 @@ class RecentPhoto {
 ### 6.2 存储布局
 
 ```
-<ApplicationSupportDirectory>/idwm_photos/
+<ApplicationSupportDirectory>/idmask_photos/
 ├── <id>              # 原图副本，id 即文件名，形如 1757654321000.jpg
 └── thumbs/<id>.png   # 缩略图，长边 240 px
 ```
@@ -480,7 +480,7 @@ Flutter 内置的 `Image.toByteData` 支持的编码格式只有 PNG，没有 JP
 
 ### 8.4 平台通道协议
 
-- 通道名：`com.xzgg.idwm/jpeg`
+- 通道名：`com.xzgg.idmask/jpeg`
 - 方法：`encodeJpeg`
 - 入参：`{ "png": Uint8List, "quality": Int }`
 - 返回：`Uint8List`（JPEG 字节）
@@ -489,14 +489,14 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 
 另有一条平台通道，用于把照片副本目录排除出 iCloud 备份：
 
-- 通道名：`com.xzgg.idwm/storage`
+- 通道名：`com.xzgg.idmask/storage`
 - 方法：`excludeFromBackup`
 - 入参：`{ "path": String }`
 - 返回：无
 
-这条通道**只有 iOS 侧有实现**：把给定路径（`idwm_photos/` 照片副本目录）标记为 `NSURLIsExcludedFromBackupKey`，从而不参与 iCloud 备份（见第 4.6 节与第 9.2 节）。Android 侧无需实现，调用时按不存在处理。
+这条通道**只有 iOS 侧有实现**：把给定路径（`idmask_photos/` 照片副本目录）标记为 `NSURLIsExcludedFromBackupKey`，从而不参与 iCloud 备份（见第 4.6 节与第 9.2 节）。Android 侧无需实现，调用时按不存在处理。
 
-两条通道的原生实现分别在 `android/app/src/main/kotlin/com/xzgg/idwm/MainActivity.kt` 与 `ios/Runner/AppDelegate.swift`。
+两条通道的原生实现分别在 `android/app/src/main/kotlin/com/xzgg/idmask/MainActivity.kt` 与 `ios/Runner/AppDelegate.swift`。
 
 ### 8.5 降级策略
 
@@ -513,7 +513,7 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - `android:label="证件水印"`
 - 取图优先走系统照片选择器：`image_picker` 在受支持的 Android 版本上使用系统照片选择器，不要求声明相册读取权限。实现时先不声明 `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE`，真机上确认低版本也能取图；若确有版本取图失败，再补最小必要的那一个权限
 - 写入相册：`gal` 在 Android 10+ 通过 MediaStore 保存，无需权限；Android 9 及以下需要 `WRITE_EXTERNAL_STORAGE`
-- `applicationId` 与 `namespace` 均为 `com.xzgg.idwm`
+- `applicationId` 与 `namespace` 均为 `com.xzgg.idmask`
 
 不需要为「最近照片」申请任何权限 —— 副本写在 App 自己的私有目录里，不涉及外部存储。
 
@@ -528,11 +528,11 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 - `CFBundleDisplayName` = `证件水印`
 - `NSPhotoLibraryUsageDescription` —— 说明读取相册是为了选取要加水印的证件照
 - `NSPhotoLibraryAddUsageDescription` —— 说明保存是为了把加好水印的照片存回相册
-- `PRODUCT_BUNDLE_IDENTIFIER` = `com.xzgg.idwm`
+- `PRODUCT_BUNDLE_IDENTIFIER` = `com.xzgg.idmask`
 
 两个权限说明文案都要写清楚用途，不能是占位符 —— 这是 App Store 审核的常见退回点。
 
-另外，创建 `idwm_photos/` 目录时给它设置 `NSURLIsExcludedFromBackupKey`，把证件照副本排除出 iCloud 备份。这是第 4.6 节隐私承诺的一部分，不要漏。这一步通过第 8.4 节的 `com.xzgg.idwm/storage` 通道（方法 `excludeFromBackup`）从 Dart 侧触发。
+另外，创建 `idmask_photos/` 目录时给它设置 `NSURLIsExcludedFromBackupKey`，把证件照副本排除出 iCloud 备份。这是第 4.6 节隐私承诺的一部分，不要漏。这一步通过第 8.4 节的 `com.xzgg.idmask/storage` 通道（方法 `excludeFromBackup`）从 Dart 侧触发。
 
 **方法通道的注册方式（UIScene 架构）**
 
@@ -545,7 +545,7 @@ Android 侧用 `BitmapFactory.decodeByteArray` + `Bitmap.compress(JPEG, quality)
 ```swift
 override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
   let messenger = engineBridge.applicationRegistrar.messenger()
-  FlutterMethodChannel(name: "com.xzgg.idwm/jpeg", binaryMessenger: messenger)
+  FlutterMethodChannel(name: "com.xzgg.idmask/jpeg", binaryMessenger: messenger)
     .setMethodCallHandler { call, result in /* ... */ }
 }
 ```
@@ -631,7 +631,7 @@ override func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicit
 | 中文在个别设备上的字体回退 | 水印显示为方框 | 真机在 iOS 与 Android 各验证一次 |
 | 平台通道两端行为差异（Android `Bitmap` 与 iOS `UIImage`） | 输出画质或方向不一致 | 同一张图两端各跑一遍，比对成品 |
 | 单块水印拖到某位置后换成一张长宽比差别很大的照片 | 位置观感可能不如预期 | 归一化坐标已保证等比，真机确认；不为此引入吸附 |
-| iOS 未正确排除 iCloud 备份 | 证件照副本可能被同步上云 | 真机开启 iCloud 备份后确认 `idwm_photos/` 不在备份范围内；实现时确保创建目录即设置该键 |
+| iOS 未正确排除 iCloud 备份 | 证件照副本可能被同步上云 | 真机开启 iCloud 备份后确认 `idmask_photos/` 不在备份范围内；实现时确保创建目录即设置该键 |
 | 指纹抽样（首/中/末各 4KB）对某些照片区分度不足 | 两张不同照片被误判为同一张 | 抽样覆盖头尾与中段，对常规照片足够；真机上用多张相似照片试一遍 |
 
 ### 12.1 已知限制
@@ -681,11 +681,11 @@ M5 排在渲染管线之前，是因为「最近照片」只依赖选图这一�
 
 沿用其技术路线，但去掉不需要的部分：
 
-| fitutor 有 | idwm 是否需要 | 说明 |
+| fitutor 有 | idmask 是否需要 | 说明 |
 |---|---|---|
 | `sqflite` + DAO 四张表 | 不要 | 无表结构需求，改用 `shared_preferences` |
 | `flutter_tts` / 通知 / 后台保活 | 不要 | 与水印场景无关 |
 | 多 Tab `IndexedStack` 导航 | 不要 | 只有主编辑页一个页面 |
 | Provider 分三个 | 只要一个 | `WatermarkProvider` 统一持有状态 |
 | 按比例换算尺寸（进度环） | 沿用同类思路 | 水印字号同样按图片短边比例算，保证跨分辨率观感一致 |
-| 本地持久化 | 都需要，但用途不同 | fitutor 存训练数据需建表；idwm 只存文案、样式与照片副本索引，用键值存储足够 |
+| 本地持久化 | 都需要，但用途不同 | fitutor 存训练数据需建表；idmask 只存文案、样式与照片副本索引，用键值存储足够 |

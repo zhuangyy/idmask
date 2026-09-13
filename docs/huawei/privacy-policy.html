@@ -109,7 +109,7 @@
   <table>
     <tr><th>开发者名称</th><td>xzgg</td></tr>
     <tr><th>应用名称</th><td>证件水印</td></tr>
-    <tr><th>应用包名</th><td><code>com.xzgg.idwm</code></td></tr>
+    <tr><th>应用包名</th><td><code>com.xzgg.idmask</code></td></tr>
     <tr><th>适用平台</th><td>Android</td></tr>
   </table>
 
@@ -125,11 +125,11 @@
   <h2>3. 本地数据说明</h2>
   <p>为了让你下次使用时更方便，本 App 会在<strong>本设备本地</strong>保存少量数据，它们都存放在 App 自己的私有目录中，不会上传：</p>
   <ul>
-    <li><strong>最近照片副本：</strong>你从相册选过的照片，会复制一份到 App 私有目录 <code>idwm_photos/</code>，以便「最近照片」一键复用。副本在存储时不改变原格式，最多保留 10 张，超出时自动淘汰最旧的一张。</li>
+    <li><strong>最近照片副本：</strong>你从相册选过的照片，会复制一份到 App 私有目录 <code>idmask_photos/</code>，以便「最近照片」一键复用。副本在存储时不改变原格式，最多保留 10 张，超出时自动淘汰最旧的一张。</li>
     <li><strong>最近文案：</strong>你最近使用过的水印文字，最多保留 10 条。</li>
     <li><strong>样式设置：</strong>版式、位置、透明度、字号、颜色等偏好设置。</li>
   </ul>
-  <p>「最近照片副本」与「样式设置」中的部分内容存放在系统的 <code>shared_preferences</code> 存储中，照片副本文件存放在 App 私有目录 <code>idwm_photos/</code> 下。这些目录<strong>其他 App 无法读取</strong>，普通文件管理器也翻不到。</p>
+  <p>「最近照片副本」与「样式设置」中的部分内容存放在系统的 <code>shared_preferences</code> 存储中，照片副本文件存放在 App 私有目录 <code>idmask_photos/</code> 下。这些目录<strong>其他 App 无法读取</strong>，普通文件管理器也翻不到。</p>
   <p><strong>你可以随时清除这些本地数据：</strong></p>
   <ul>
     <li>在 App 内删除单张最近照片，或使用「一键清空」清空最近照片列表；</li>
@@ -142,7 +142,7 @@
     <li>从相册选图：使用 Android 系统的照片选择器，无需申请相册读取权限。</li>
     <li>保存成品到相册：使用 Android 系统的媒体库接口（MediaStore），在 Android 10 及以上无需申请相册写入权限。</li>
     <li>「最近照片」副本写在 App 自己的私有目录中，不涉及外部存储，无需权限。</li>
-    <li>构建产物中仅出现一条权限 <code>com.xzgg.idwm.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</code>，它是 Flutter 引擎为应用自身生成的<strong>内部广播权限</strong>，仅作用于 App 自身进程内部，不对应任何系统能力，也不访问任何用户数据。</li>
+    <li>构建产物中仅出现一条权限 <code>com.xzgg.idmask.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</code>，它是 Flutter 引擎为应用自身生成的<strong>内部广播权限</strong>，仅作用于 App 自身进程内部，不对应任何系统能力，也不访问任何用户数据。</li>
   </ul>
 
   <h2>5. 第三方组件披露</h2>

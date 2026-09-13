@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 class JpegEncoder {
   const JpegEncoder._();
 
-  static const String channelName = 'com.xzgg.idwm/jpeg';
+  static const String channelName = 'com.xzgg.idmask/jpeg';
   static const int defaultQuality = 92;
 
   static const MethodChannel _channel = MethodChannel(channelName);

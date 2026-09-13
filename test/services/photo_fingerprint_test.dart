@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/services/photo_fingerprint.dart';
+import 'package:idmask/services/photo_fingerprint.dart';
 
 Uint8List bytesOf(int length, {int seed = 0}) {
   final rnd = math.Random(seed);

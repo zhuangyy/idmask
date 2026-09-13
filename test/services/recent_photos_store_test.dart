@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/recent_photo.dart';
-import 'package:idwm/services/recent_photos_store.dart';
+import 'package:idmask/models/recent_photo.dart';
+import 'package:idmask/services/recent_photos_store.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,8 +34,8 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     prefs = await SharedPreferences.getInstance();
-    tempRoot = await Directory.systemTemp.createTemp('idwm_store_test_');
-    workDir = await Directory.systemTemp.createTemp('idwm_src_test_');
+    tempRoot = await Directory.systemTemp.createTemp('idmask_store_test_');
+    workDir = await Directory.systemTemp.createTemp('idmask_src_test_');
   });
 
   tearDown(() async {

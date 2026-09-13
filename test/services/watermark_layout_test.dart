@@ -2,9 +2,9 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/watermark_item.dart';
-import 'package:idwm/models/watermark_style.dart';
-import 'package:idwm/services/watermark_layout.dart';
+import 'package:idmask/models/watermark_item.dart';
+import 'package:idmask/models/watermark_style.dart';
+import 'package:idmask/services/watermark_layout.dart';
 
 /// 按字数估算的假测量器。宽度 0.6 倍字号，高度 1.2 倍字号。
 Size fakeMeasure(String text, double fontSize) =>

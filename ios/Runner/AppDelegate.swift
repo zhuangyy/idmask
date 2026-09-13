@@ -15,7 +15,7 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
     let channel = FlutterMethodChannel(
-      name: "com.xzgg.idwm/jpeg",
+      name: "com.xzgg.idmask/jpeg",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
 
@@ -44,7 +44,7 @@ import UIKit
 
     // 存储相关：把照片副本目录排除出 iCloud 备份。
     let storageChannel = FlutterMethodChannel(
-      name: "com.xzgg.idwm/storage",
+      name: "com.xzgg.idmask/storage",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
 

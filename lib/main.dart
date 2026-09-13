@@ -21,7 +21,7 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final supportDir = await getApplicationSupportDirectory();
-  final photosDir = Directory(p.join(supportDir.path, 'idwm_photos'));
+  final photosDir = Directory(p.join(supportDir.path, 'idmask_photos'));
 
   await photosDir.create(recursive: true);
   await BackupExcluder.exclude(photosDir.path);
@@ -39,13 +39,13 @@ Future<void> main() async {
   runApp(
     ChangeNotifierProvider<WatermarkProvider>.value(
       value: provider,
-      child: IdwmApp(version: packageInfo.version),
+      child: IdMaskApp(version: packageInfo.version),
     ),
   );
 }
 
-class IdwmApp extends StatelessWidget {
-  const IdwmApp({super.key, required this.version});
+class IdMaskApp extends StatelessWidget {
+  const IdMaskApp({super.key, required this.version});
 
   /// App 版本号，显示在标题栏。
   final String version;

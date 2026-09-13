@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 class BackupExcluder {
   const BackupExcluder._();
 
-  static const MethodChannel _channel = MethodChannel('com.xzgg.idwm/storage');
+  static const MethodChannel _channel = MethodChannel('com.xzgg.idmask/storage');
 
   static Future<void> exclude(String path) async {
     if (!Platform.isIOS) return;

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/watermark_style.dart';
+import 'package:idmask/models/watermark_style.dart';
 
 void main() {
   group('默认值', () {

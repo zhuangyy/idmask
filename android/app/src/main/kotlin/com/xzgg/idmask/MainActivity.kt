@@ -1,4 +1,4 @@
-package com.xzgg.idwm
+package com.xzgg.idmask
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -8,7 +8,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 
 class MainActivity : FlutterActivity() {
-    private val channelName = "com.xzgg.idwm/jpeg"
+    private val channelName = "com.xzgg.idmask/jpeg"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

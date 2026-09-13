@@ -109,7 +109,7 @@ class ImageRenderer {
     final tempDir = await getTemporaryDirectory();
     final file = File(p.join(
       tempDir.path,
-      'idwm_${DateTime.now().millisecondsSinceEpoch}$extension',
+      'idmask_${DateTime.now().millisecondsSinceEpoch}$extension',
     ));
     await file.writeAsBytes(Uint8List.fromList(outputBytes));
 

@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/watermark_style.dart';
-import 'package:idwm/pages/edit_page.dart';
-import 'package:idwm/providers/watermark_provider.dart';
-import 'package:idwm/services/recent_photos_store.dart';
-import 'package:idwm/services/recent_texts_store.dart';
-import 'package:idwm/widgets/photo_canvas.dart';
+import 'package:idmask/models/watermark_style.dart';
+import 'package:idmask/pages/edit_page.dart';
+import 'package:idmask/providers/watermark_provider.dart';
+import 'package:idmask/services/recent_photos_store.dart';
+import 'package:idmask/services/recent_texts_store.dart';
+import 'package:idmask/widgets/photo_canvas.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +21,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final prefs = await SharedPreferences.getInstance();
-    tempRoot = await Directory.systemTemp.createTemp('idwm_widget_test_');
+    tempRoot = await Directory.systemTemp.createTemp('idmask_widget_test_');
     provider = WatermarkProvider(
       photosStore: RecentPhotosStore(
         root: tempRoot,

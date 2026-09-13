@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/recent_photo.dart';
+import 'package:idmask/models/recent_photo.dart';
 
 void main() {
   test('JSON 往返保留全部字段', () {

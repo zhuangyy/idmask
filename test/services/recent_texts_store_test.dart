@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idwm/models/watermark_style.dart';
-import 'package:idwm/services/recent_texts_store.dart';
+import 'package:idmask/models/watermark_style.dart';
+import 'package:idmask/services/recent_texts_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

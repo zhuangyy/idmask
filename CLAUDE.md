@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-证件水印（idwm）—— 在证件照片上叠文字水印的 Android + iOS App。
+证件水印（idmask）—— 在证件照片上叠文字水印的 Android + iOS App。
 
 用途：在线上提交身份证、学历证等证件照片时，先叠一句「仅供某某公司办理入职使用 2026-09-12」，
 让照片即使外流也无法被当作无标注的原件使用。
@@ -71,7 +71,7 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 ## 本地存储
 
 - `shared_preferences` 三个键：`recent_photos`、`recent_texts`、`watermark_style`
-- App 私有目录 `idwm_photos/`：照片副本 + `thumbs/` 缩略图
+- App 私有目录 `idmask_photos/`：照片副本 + `thumbs/` 缩略图
   - 副本**直接复制源字节**，不重新编码（保留原始画质）
   - **iOS 上该目录排除 iCloud 备份**（见 `lib/services/backup_excluder.dart`），
     这是隐私承诺，不要删掉那段逻辑
@@ -79,13 +79,13 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 
 ## 平台通道
 
-两条，原生实现分别位于 `android/app/src/main/kotlin/com/xzgg/idwm/MainActivity.kt`
+两条，原生实现分别位于 `android/app/src/main/kotlin/com/xzgg/idmask/MainActivity.kt`
 与 `ios/Runner/AppDelegate.swift`：
 
 | 通道 | 方法 | 用途 |
 |---|---|---|
-| `com.xzgg.idwm/jpeg` | `encodeJpeg` | PNG → JPEG。不可用时 Dart 侧返回 null，上层回退存 PNG |
-| `com.xzgg.idwm/storage` | `excludeFromBackup` | 仅 iOS；把目录排除出 iCloud 备份 |
+| `com.xzgg.idmask/jpeg` | `encodeJpeg` | PNG → JPEG。不可用时 Dart 侧返回 null，上层回退存 PNG |
+| `com.xzgg.idmask/storage` | `excludeFromBackup` | 仅 iOS；把目录排除出 iCloud 备份 |
 
 **iOS 侧注意**：本工程是 Flutter 3.47.2 的 **UIScene 架构**（存在 `ios/Runner/SceneDelegate.swift`，
 且 `Info.plist` 里有 `UIApplicationSceneManifest`）。`AppDelegate` 声明为
@@ -133,5 +133,5 @@ iCloud 备份排除是否生效。清单见设计文档第 12.2 节。
 
 ## 设计文档
 
-`docs/superpowers/specs/2026-09-12-idwm-design.md` 是唯一事实来源，改动行为前先读它。
-实施计划在 `docs/superpowers/plans/2026-09-12-idwm.md`。
+`docs/superpowers/specs/2026-09-12-idmask-design.md` 是唯一事实来源，改动行为前先读它。
+实施计划在 `docs/superpowers/plans/2026-09-12-idmask.md`。
