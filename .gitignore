@@ -55,3 +55,8 @@ build/
 
 # Reasonix 本地会话状态（不纳入版本控制）
 .reasonix/tasks/
+
+# 签名密钥（绝不提交）
+android/key.properties
+*.jks
+*.keystore

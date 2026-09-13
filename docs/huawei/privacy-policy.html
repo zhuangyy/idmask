@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>证件水印 · 隐私政策</title>
+<style>
+  :root {
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #1a56a0;
+    --line: #d8dee4;
+    --bg: #ffffff;
+    --note-bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    line-height: 1.35;
+    margin: 0 0 8px;
+    letter-spacing: 0.5px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 32px;
+  }
+  h2 {
+    font-size: 19px;
+    margin: 36px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 22px 0 8px;
+  }
+  p { margin: 10px 0; }
+  ul { margin: 10px 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  strong { color: #11151a; }
+  a { color: var(--accent); word-break: break-all; }
+  .lede {
+    background: var(--note-bg);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin: 0 0 8px;
+  }
+  .lede p { margin: 6px 0; }
+  code {
+    background: var(--note-bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 90%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 15px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th { background: var(--note-bg); }
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>证件水印 · 隐私政策</h1>
+  <p class="subtitle">生效日期：2026-09-13</p>
+
+  <div class="lede">
+    <p><strong>一句话概括：</strong>本 App 不收集任何个人信息。</p>
+    <p>「证件水印」没有账号、没有登录，也<strong>没有申请 <code>INTERNET</code> 权限</strong>——它在物理上无法联网，任何数据都不可能被上传。</p>
+  </div>
+
+  <h2>1. 开发者与应用信息</h2>
+  <table>
+    <tr><th>开发者名称</th><td>xzgg</td></tr>
+    <tr><th>应用名称</th><td>证件水印</td></tr>
+    <tr><th>应用包名</th><td><code>com.xzgg.idwm</code></td></tr>
+    <tr><th>适用平台</th><td>Android</td></tr>
+  </table>
+
+  <h2>2. 我们如何处理你的信息</h2>
+  <p>本 App 是一款在证件照片上叠加文字水印的离线小工具。它<strong>不收集、不存储、不分享任何个人信息</strong>，具体来说：</p>
+  <ul>
+    <li><strong>无账号、无登录。</strong>使用本 App 不需要注册，我们也无法识别你或你的设备。</li>
+    <li><strong>无法联网。</strong>本 App 未申请 <code>INTERNET</code> 权限，构建产物中不含该权限，程序在物理上无法建立任何网络连接，也无法把任何数据发送到任何服务器。</li>
+    <li><strong>无广告、无统计、无埋点。</strong>本 App 不包含任何广告 SDK、统计分析 SDK 或行为追踪代码。</li>
+    <li><strong>照片只在本机处理。</strong>你选中的证件照片、输入的水印文字、生成的成品图，全部只在这台设备的本地处理，不会离开设备。</li>
+  </ul>
+
+  <h2>3. 本地数据说明</h2>
+  <p>为了让你下次使用时更方便，本 App 会在<strong>本设备本地</strong>保存少量数据，它们都存放在 App 自己的私有目录中，不会上传：</p>
+  <ul>
+    <li><strong>最近照片副本：</strong>你从相册选过的照片，会复制一份到 App 私有目录 <code>idwm_photos/</code>，以便「最近照片」一键复用。副本在存储时不改变原格式，最多保留 10 张，超出时自动淘汰最旧的一张。</li>
+    <li><strong>最近文案：</strong>你最近使用过的水印文字，最多保留 10 条。</li>
+    <li><strong>样式设置：</strong>版式、位置、透明度、字号、颜色等偏好设置。</li>
+  </ul>
+  <p>「最近照片副本」与「样式设置」中的部分内容存放在系统的 <code>shared_preferences</code> 存储中，照片副本文件存放在 App 私有目录 <code>idwm_photos/</code> 下。这些目录<strong>其他 App 无法读取</strong>，普通文件管理器也翻不到。</p>
+  <p><strong>你可以随时清除这些本地数据：</strong></p>
+  <ul>
+    <li>在 App 内删除单张最近照片，或使用「一键清空」清空最近照片列表；</li>
+    <li>卸载本 App，以上所有本地数据（含照片副本）会随 App 一并删除。</li>
+  </ul>
+
+  <h2>4. 权限使用说明</h2>
+  <p><strong>本 App 不申请任何系统权限。</strong></p>
+  <ul>
+    <li>从相册选图：使用 Android 系统的照片选择器，无需申请相册读取权限。</li>
+    <li>保存成品到相册：使用 Android 系统的媒体库接口（MediaStore），在 Android 10 及以上无需申请相册写入权限。</li>
+    <li>「最近照片」副本写在 App 自己的私有目录中，不涉及外部存储，无需权限。</li>
+    <li>构建产物中仅出现一条权限 <code>com.xzgg.idwm.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</code>，它是 Flutter 引擎为应用自身生成的<strong>内部广播权限</strong>，仅作用于 App 自身进程内部，不对应任何系统能力，也不访问任何用户数据。</li>
+  </ul>
+
+  <h2>5. 第三方组件披露</h2>
+  <p>本 App 基于 <strong>Flutter</strong> 框架开发，使用了以下开源组件。它们均为 Flutter 官方或社区的开源软件包，<strong>不包含任何广告、统计或埋点 SDK，也不会采集或上传任何数据</strong>：</p>
+  <table>
+    <tr><th>组件</th><th>用途</th></tr>
+    <tr><td><code>image_picker</code></td><td>从系统相册选择照片（Flutter 官方插件）</td></tr>
+    <tr><td><code>gal</code></td><td>把处理好的成品图保存到系统相册</td></tr>
+    <tr><td><code>shared_preferences</code></td><td>在本地保存最近文案与样式偏好（Flutter 官方插件）</td></tr>
+    <tr><td><code>path_provider</code></td><td>获取 App 私有目录与临时目录（Flutter 官方插件）</td></tr>
+    <tr><td><code>path</code></td><td>拼接文件路径</td></tr>
+    <tr><td><code>provider</code></td><td>应用内部的状态管理</td></tr>
+    <tr><td><code>package_info_plus</code></td><td>读取并显示当前 App 版本号</td></tr>
+  </table>
+
+  <h2>6. 未成年人保护</h2>
+  <p>本 App 是一款通用的图片处理工具，<strong>不针对未成年人</strong>，也不会有意收集未成年人的任何信息。由于本 App 本身不收集任何个人信息，因此不存在针对未成年人的信息收集行为。</p>
+
+  <h2>7. 政策的更新</h2>
+  <p>我们可能会在 App 功能发生变化时更新本隐私政策。更新后的政策会在本页面公布，并同步更新文首的「生效日期」。若更新涉及信息处理方式的实质变化，我们会在 App 内或应用市场更新说明中提示。</p>
+
+  <h2>8. 联系我们</h2>
+  <p>如果你对本隐私政策有任何疑问或意见，可以通过以下方式联系我们：</p>
+  <!-- // TODO: 换成你的真实邮箱 -->
+  <p>邮箱：<a href="mailto:xzgg@example.com">xzgg@example.com</a></p>
+
+  <footer>
+    开发者：xzgg ｜ 应用：证件水印 ｜ 生效日期：2026-09-13
+  </footer>
+
+</main>
+</body>
+</html>
