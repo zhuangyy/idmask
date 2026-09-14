@@ -26,6 +26,12 @@ flutter build apk
 flutter build ios --simulator
 ```
 
+平台通道与渲染链要在真实设备上验证（必须指定设备）：
+
+```bash
+flutter test integration_test/platform_channels_test.dart -d <device-id>
+```
+
 ### 代理
 
 `flutter pub get` / `flutter test` / `flutter build` 需要 SOCKS5 代理：
@@ -87,6 +93,9 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 | `com.xzgg.idmask/jpeg` | `encodeJpeg` | PNG → JPEG。不可用时 Dart 侧返回 null，上层回退存 PNG |
 | `com.xzgg.idmask/storage` | `excludeFromBackup` | 仅 iOS；把目录排除出 iCloud 备份 |
 
+**iOS 集成方式**：插件走 Flutter 的 **Swift Package Manager**（生成物在 `ios/Flutter/ephemeral/Packages/`），
+`ios/` 下**没有也不需要 Podfile** —— 不要新建 Podfile，也不要执行 `pod install`。
+
 **iOS 侧注意**：本工程是 Flutter 3.47.2 的 **UIScene 架构**（存在 `ios/Runner/SceneDelegate.swift`，
 且 `Info.plist` 里有 `UIApplicationSceneManifest`）。`AppDelegate` 声明为
 `class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate`，通道在
@@ -107,6 +116,10 @@ export HTTP_PROXY=socks5://127.0.0.1:7890
 
 `test/` 下按被测对象分文件。纯逻辑（布局、文案、指纹、存储）与主编辑页的 widget 测试都已覆盖，
 全量 82 条。
+
+`integration_test/platform_channels_test.dart` 覆盖只能在真机/模拟器上跑的三件事：
+JPEG 编码平台通道、渲染链（解码 → 绘制 → 编码 → 写临时文件）、iOS 的 iCloud 备份排除。
+它不在 `flutter test` 的默认范围内，要按上面的命令显式指定设备运行。
 
 真机相关的事靠手测：相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感、
 iCloud 备份排除是否生效。清单见设计文档第 12.2 节。

@@ -127,7 +127,13 @@ lib/
 flutter test
 ```
 
-相册读写、平台通道编码、权限弹窗、大图内存表现、拖动手感、iCloud 备份排除等真机相关事项靠手测，
+平台通道与渲染链的端到端验证单独放在 `integration_test/`，需指定设备运行：
+
+```bash
+flutter test integration_test/platform_channels_test.dart -d <device-id>
+```
+
+相册读写、权限弹窗、大图内存表现、拖动手感等真机相关事项仍靠手测，
 清单见设计文档第 12.2 节。
 
 ## 文档
