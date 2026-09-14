@@ -60,3 +60,9 @@ build/
 android/key.properties
 *.jks
 *.keystore
+
+# 应用商店上架材料：留在本地、不公开
+# （隐私政策需 GitHub Pages 发布，故仍纳入版本控制）
+/docs/huawei/app-info.md
+/docs/huawei/publishing-checklist.md
+/docs/huawei/screenshots/

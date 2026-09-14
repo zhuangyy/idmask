@@ -120,7 +120,7 @@ flutter test
 |---|---|
 | `docs/superpowers/specs/2026-09-12-idmask-design.md` | 设计文档，行为相关改动的唯一事实来源 |
 | `docs/superpowers/plans/2026-09-12-idmask.md` | 实施计划 |
-| `docs/huawei/app-info.md` | 应用市场上架文案 |
-| `docs/huawei/privacy-policy.html` | 隐私政策 |
-| `docs/huawei/publishing-checklist.md` | 上架操作手册 |
+| `docs/huawei/privacy-policy.html` | 隐私政策（经 GitHub Pages 发布） |
 | `AGENTS.md` / `CLAUDE.md` | 面向 AI Agent 的仓库约定 |
+
+> 应用商店上架材料（市场文案、上架操作手册、截图）保留在本地 `docs/huawei/`，不纳入版本控制。
