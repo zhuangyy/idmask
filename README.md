@@ -7,6 +7,22 @@
 
 **100% 离线 · 无账号 · 无后端 · 不申请任何系统权限 · 无广告**
 
+## 界面
+
+<p align="center">
+  <img src="docs/screenshots/01-tile-watermark.png" width="220">
+  <img src="docs/screenshots/02-single-drag.png" width="220">
+  <img src="docs/screenshots/03-style-controls.png" width="220">
+</p>
+<p align="center">
+  <img src="docs/screenshots/04-recent-photos.png" width="220">
+  <img src="docs/screenshots/05-recent-texts.png" width="220">
+</p>
+
+> 从左到右、从上到下：平铺水印效果 / 单块水印拖到一角 / 版式与样式调整 / 最近照片 / 最近文案。
+> 截图取自模拟器上运行的 release 版；照片是脚本生成的**示例证件**，不含任何真实个人信息。
+
+
 ## 功能
 
 主流程只有四步：**选图 → 输文案 → 实时预览 → 保存到相册**。
