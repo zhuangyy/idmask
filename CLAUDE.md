@@ -144,6 +144,17 @@ iCloud 备份排除是否生效。清单见设计文档第 12.2 节。
 
 - **别拿自带水印的成品图当验证素材。** 照片内容里的水印会和刚渲染的水印叠在一起，看不出差异，容易误判成「修复没生效」。先用一张干净图片。
 
+## Git 提交约定
+
+**commit message 一律用英文**（subject 与正文都是）。仓库里的文档、注释与对话可以用中文，
+但提交信息统一英文，便于跨项目检索与协作。沿用 Conventional Commits 前缀
+（`feat` / `fix` / `docs` / `chore` / `style` / `refactor` / `test` / `perf`）。
+
+```bash
+git commit -m "fix: keep the reference line centered on the watermark"
+git commit -m "feat: support dragging the tiled watermark offset" -m "Clamp the offset to 3/4 of the canvas."
+```
+
 ## 设计文档
 
 `docs/superpowers/specs/2026-09-12-idmask-design.md` 是唯一事实来源，改动行为前先读它。
